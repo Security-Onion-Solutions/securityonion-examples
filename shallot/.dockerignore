@@ -1,0 +1,16 @@
+**/__pycache__
+**/.pytest_cache
+**/.coverage
+**/.git
+**/.gitignore
+**/node_modules
+**/*.pyc
+backend/tests
+backend/.coverage
+backend/app.db
+backend/matrix_store_*.db
+backend/chat_users_backup.sql
+frontend/node_modules
+frontend/dist
+docs/openapi.json
+memory-bank
