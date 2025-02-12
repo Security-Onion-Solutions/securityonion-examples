@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Onion Chat Bot Integration Guide</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            font-size: 16px;
+            line-height: 1.5;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #24292e;
+        }
+        h1, h2, h3 {
+            border-bottom: 1px solid #eaecef;
+            padding-bottom: 0.3em;
+        }
+        h1 { font-size: 2em; }
+        h2 { font-size: 1.5em; margin-top: 24px; }
+        h3 { font-size: 1.25em; }
+        a { color: #0366d6; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        code {
+            padding: 0.2em 0.4em;
+            margin: 0;
+            font-size: 85%;
+            background-color: rgba(27,31,35,0.05);
+            border-radius: 3px;
+            font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+        }
+        pre code {
+            display: block;
+            padding: 16px;
+            overflow: auto;
+            line-height: 1.45;
+        }
+        ul { padding-left: 2em; }
+        li { margin: 0.25em 0; }
+    </style>
+</head>
+<body>
+    <h1>Security Onion Chat Bot Integration Guide</h1>
+    <p>This comprehensive guide covers setting up and configuring the Security Onion Chat Bot with various chat platforms.</p>
+
+    <h2>Table of Contents</h2>
+    <ul>
+        <li><a href="#security-considerations">Security Considerations</a></li>
+        <li><a href="#discord-setup">Discord Setup</a></li>
+        <li><a href="#slack-setup">Slack Setup</a></li>
+        <li><a href="#matrix-setup">Matrix Setup</a></li>
+    </ul>
+
+    <h2 id="security-considerations">Security Considerations</h2>
+    <p>Before setting up any integration:</p>
+    <ul>
+        <li>Keep all tokens secure and never commit them to version control</li>
+        <li>Regularly rotate tokens if you suspect they've been compromised</li>
+        <li>Use the minimum required permissions for your use case</li>
+        <li>Monitor bot activity through the respective platform's audit logs</li>
+    </ul>
+
+    <h2 id="discord-setup">Discord Setup</h2>
+    <ol>
+        <li>
+            <p>Create a Discord Application:</p>
+            <ul>
+                <li>Go to the <a href="https://discord.com/developers/applications">Discord Developer Portal</a></li>
+                <li>Click "New Application" and give it a name</li>
+                <li>Go to the "Bot" section</li>
+                <li>Click "Add Bot"</li>
+            </ul>
+        </li>
+        <li>
+            <p>Configure Bot Settings:</p>
+            <ul>
+                <li>Under the "Bot" section, enable "Message Content Intent"</li>
+                <li>This is required for the bot to read command messages</li>
+            </ul>
+        </li>
+        <li>
+            <p>Get Bot Token:</p>
+            <ul>
+                <li>In the "Bot" section, click "Reset Token" to reveal your bot token</li>
+                <li>Copy this token - you'll need it for the "Bot Token" setting in Shallot</li>
+                <li>Keep this token secret! Don't share it publicly</li>
+            </ul>
+        </li>
+        <li>
+            <p>Invite Bot to Server:</p>
+            <ul>
+                <li>Go to "OAuth2" -> "URL Generator"</li>
+                <li>Select the following scopes:
+                    <ul>
+                        <li><code>bot</code></li>
+                        <li><code>applications.commands</code></li>
+                    </ul>
+                </li>
+                <li>Select the following bot permissions:
+                    <ul>
+                        <li><code>Send Messages</code></li>
+                        <li><code>Read Messages/View Channels</code></li>
+                    </ul>
+                </li>
+                <li>Copy the generated URL and open it in a browser</li>
+                <li>Select your server and authorize the bot</li>
+            </ul>
+        </li>
+        <li>
+            <p>Get Alert Channel ID (Optional, for alerts):</p>
+            <ul>
+                <li>In Discord, enable Developer Mode (User Settings -> App Settings -> Advanced -> Developer Mode)</li>
+                <li>Right-click the channel you want alerts in</li>
+                <li>Click "Copy Channel ID"</li>
+            </ul>
+        </li>
+        <li>
+            <p>Configure in Shallot:</p>
+            <ul>
+                <li>Enter the bot token in the Discord settings</li>
+                <li>If using alerts, enter the channel ID</li>
+                <li>Enable the integration</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2 id="slack-setup">Slack Setup</h2>
+    <ol>
+        <li>
+            <p>Create a Slack App:</p>
+            <ul>
+                <li>Go to <a href="https://api.slack.com/apps">Slack API</a></li>
+                <li>Click "Create New App"</li>
+                <li>Choose "From scratch"</li>
+                <li>Name your app and select your workspace</li>
+            </ul>
+        </li>
+        <li>
+            <p>Configure App Settings:</p>
+            <ul>
+                <li>Under "Socket Mode", enable it and create an app-level token</li>
+                <li>Save this token - you'll need it for the "App Token" setting in Shallot</li>
+                <li>Under "Event Subscriptions", enable events</li>
+                <li>Subscribe to the following bot events:
+                    <ul>
+                        <li><code>message.channels</code> - Messages in public channels</li>
+                        <li><code>message.groups</code> - Messages in private channels</li>
+                        <li><code>message.im</code> - Direct messages with the bot</li>
+                        <li><code>message.mpim</code> - Messages in group DMs</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+        <li>
+            <p>Configure Bot Settings:</p>
+            <ul>
+                <li>Go to "OAuth & Permissions"</li>
+                <li>Add the following bot scopes:
+                    <ul>
+                        <li><code>chat:write</code> - Send messages as the bot</li>
+                        <li><code>app_mentions:read</code> - Receive mention events</li>
+                        <li><code>channels:history</code> - Read message history in public channels</li>
+                        <li><code>channels:read</code> - View public channels</li>
+                        <li><code>groups:history</code> - Read message history in private channels</li>
+                        <li><code>groups:read</code> - View private channels</li>
+                        <li><code>im:history</code> - Read message history in DMs</li>
+                        <li><code>im:read</code> - View DMs</li>
+                        <li><code>mpim:history</code> - Read message history in group DMs</li>
+                        <li><code>mpim:read</code> - View group DMs</li>
+                        <li><code>files:write</code> - Upload files and create file posts</li>
+                        <li><code>files:read</code> - Access files uploaded by the bot</li>
+                        <li><code>users:read</code> - View user profiles and display names</li>
+                    </ul>
+                </li>
+                <li>Install the app to your workspace</li>
+                <li>Copy the "Bot User OAuth Token" - you'll need it for the "Bot Token" setting in Shallot</li>
+            </ul>
+        </li>
+        <li>
+            <p>Add to Channels:</p>
+            <ul>
+                <li>Invite the bot to any channels it needs access to using <code>/invite @YourBotName</code></li>
+                <li>For alerts, note the channel name (without the #) where you want alerts sent</li>
+            </ul>
+        </li>
+        <li>
+            <p>Configure in Shallot:</p>
+            <ul>
+                <li>Enter the bot token (OAuth token) in the Slack settings</li>
+                <li>Enter the app token (Socket Mode token)</li>
+                <li>If using alerts, enter the alert channel name</li>
+                <li>Enable the integration</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2 id="matrix-setup">Matrix Setup</h2>
+    <h3>Prerequisites</h3>
+    <ul>
+        <li>Access to a Matrix homeserver</li>
+        <li>Ability to create a new Matrix account</li>
+        <li>Admin access to create application service (optional)</li>
+    </ul>
+
+    <h3>Bot Account Setup</h3>
+    <ol>
+        <li>
+            <p>Create Bot Account:</p>
+            <ul>
+                <li>Register a new account on your Matrix homeserver</li>
+                <li>Choose a distinctive username (e.g., @securityonion:your-domain)</li>
+                <li>Save the access token (will be needed for configuration)</li>
+                <li>Note: You can use either the Element web client or API to create account</li>
+            </ul>
+        </li>
+        <li>
+            <p>Get Access Token:</p>
+            <pre><code># Using curl to get an access token
+curl -X POST \
+  --data '{"identifier":{"type":"m.id.user","user":"botusername"},"password":"yourpassword","type":"m.login.password"}' \
+  "https://your-homeserver/_matrix/client/r0/login"</code></pre>
+            <p>Save the access_token from the response.</p>
+        </li>
+        <li>
+            <p>Optional: Register as Application Service</p>
+            <ul>
+                <li>If you want the bot to have special privileges:
+                    <ul>
+                        <li>Create an application service registration file</li>
+                        <li>Register with homeserver admin</li>
+                        <li>Use application service token instead of user token</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Matrix Configuration</h3>
+    <ol>
+        <li>
+            <p>In the Security Onion Chat Bot settings, configure Matrix integration:</p>
+            <pre><code>{
+  "enabled": true,
+  "homeserverUrl": "https://your-homeserver",
+  "userId": "@securityonion:your-domain",
+  "accessToken": "<your-access-token>",
+  "deviceId": "SOCHATBOT1",
+  "commandPrefix": "!",
+  "requireApproval": true,
+  "alertNotifications": false,
+  "alertRoom": ""
+}</code></pre>
+        </li>
+        <li>
+            <p>Required Matrix API endpoints:</p>
+            <ul>
+                <li>/_matrix/client/r0/sync</li>
+                <li>/_matrix/client/r0/rooms/{roomId}/send</li>
+                <li>/_matrix/client/r0/rooms/{roomId}/join</li>
+                <li>/_matrix/client/r0/rooms/{roomId}/state</li>
+                <li>/_matrix/media/r0/upload</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Room Setup</h3>
+    <ol>
+        <li>
+            <p>Create a room for alerts:</p>
+            <ul>
+                <li>Create new room in Matrix</li>
+                <li>Set appropriate privacy settings</li>
+                <li>Invite bot account</li>
+                <li>Save room ID for alertRoom setting</li>
+            </ul>
+        </li>
+        <li>
+            <p>Room Access Levels:</p>
+            <ul>
+                <li>Public rooms: Bot needs to be able to join</li>
+                <li>Private rooms: Bot needs to be invited</li>
+                <li>Direct messages: Users can start DM with bot</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>End-to-End Encryption</h3>
+    <p>The bot supports end-to-end encryption via matrix-nio:</p>
+    <ol>
+        <li>
+            <p>Device verification:</p>
+            <ul>
+                <li>Users should verify the bot's device</li>
+                <li>Bot maintains encryption keys between restarts</li>
+                <li>Cross-signing is supported</li>
+            </ul>
+        </li>
+        <li>
+            <p>Encrypted room considerations:</p>
+            <ul>
+                <li>Bot automatically handles room key sharing</li>
+                <li>Messages are encrypted by default in E2E rooms</li>
+                <li>File uploads are also encrypted</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Matrix Testing and Troubleshooting</h3>
+    <ol>
+        <li>
+            <p>Test basic commands:</p>
+            <pre><code>!help - Show available commands
+!status - Check bot status
+!register - Register for access</code></pre>
+        </li>
+        <li>
+            <p>Common Matrix issues:</p>
+            <ul>
+                <li>Connection Issues:
+                    <ul>
+                        <li>Verify homeserver URL is correct</li>
+                        <li>Check access token is valid</li>
+                        <li>Ensure network connectivity</li>
+                        <li>Verify homeserver is online</li>
+                    </ul>
+                </li>
+                <li>Authentication Problems:
+                    <ul>
+                        <li>Confirm userId format is correct</li>
+                        <li>Verify access token hasn't expired</li>
+                        <li>Check device ID is unique</li>
+                        <li>Ensure bot has necessary permissions</li>
+                    </ul>
+                </li>
+                <li>Room Access Issues:
+                    <ul>
+                        <li>Check room privacy settings</li>
+                        <li>Verify bot has been invited</li>
+                        <li>Ensure proper power levels</li>
+                        <li>Check room encryption status</li>
+                    </ul>
+                </li>
+                <li>Message Delivery:
+                    <ul>
+                        <li>Verify command prefix</li>
+                        <li>Check rate limiting</li>
+                        <li>Ensure proper room permissions</li>
+                        <li>Verify encryption keys for E2E rooms</li>
+                    </ul>
+                </li>
+            </ul>
+        </li>
+    </ol>
+
+    <h3>Matrix Security Considerations</h3>
+    <ol>
+        <li>
+            <p>Access Token Security:</p>
+            <ul>
+                <li>Store access token securely</li>
+                <li>Use application service if possible</li>
+                <li>Rotate tokens periodically</li>
+                <li>Monitor for unauthorized use</li>
+            </ul>
+        </li>
+        <li>
+            <p>Room Management:</p>
+            <ul>
+                <li>Control bot room membership</li>
+                <li>Set appropriate power levels</li>
+                <li>Monitor room invites</li>
+                <li>Regular access review</li>
+            </ul>
+        </li>
+        <li>
+            <p>End-to-End Encryption:</p>
+            <ul>
+                <li>Verify devices when possible</li>
+                <li>Maintain consistent device ID</li>
+                <li>Backup encryption keys</li>
+                <li>Monitor for unknown devices</li>
+            </ul>
+        </li>
+    </ol>
+
+    <h2>Support and Resources</h2>
+    <p>For additional help:</p>
+    <ul>
+        <li>Check platform-specific documentation:
+            <ul>
+                <li><a href="https://discord.com/developers/docs">Discord Developer Documentation</a></li>
+                <li><a href="https://api.slack.com/docs">Slack API Documentation</a></li>
+                <li><a href="https://spec.matrix.org/">Matrix Specification</a></li>
+            </ul>
+        </li>
+        <li>Contact your platform administrator</li>
+        <li>Review system logs for specific error messages</li>
+        <li>Check the Security Onion Chat Bot documentation for updates</li>
+    </ul>
+</body>
+</html>
