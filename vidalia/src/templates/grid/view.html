@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Grid Management - Vidalia{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Grid Management</h1>
+    
+    <div class="grid-status-summary">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h3 class="card-title">Grid Status</h3>
+                <div class="d-flex justify-content-around mt-3">
+                    <div class="text-center">
+                        <h4 class="text-success">
+                            {{ nodes|selectattr("status", "equalto", "healthy")|list|length }}
+                        </h4>
+                        <span class="text-muted">Healthy</span>
+                    </div>
+                    <div class="text-center">
+                        <h4 class="text-warning">
+                            {{ nodes|selectattr("status", "equalto", "warning")|list|length }}
+                        </h4>
+                        <span class="text-muted">Warning</span>
+                    </div>
+                    <div class="text-center">
+                        <h4 class="text-danger">
+                            {{ nodes|selectattr("status", "equalto", "error")|list|length }}
+                        </h4>
+                        <span class="text-muted">Error</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group mb-4" role="group">
+        <button class="btn btn-outline-secondary active filter-btn" data-filter="all">All Nodes</button>
+        <button class="btn btn-outline-success filter-btn" data-filter="healthy">Healthy</button>
+        <button class="btn btn-outline-warning filter-btn" data-filter="warning">Warning</button>
+        <button class="btn btn-outline-danger filter-btn" data-filter="error">Error</button>
+    </div>
+
+    <div class="row">
+        {% for node in nodes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 node-card" data-status="{{ node.status }}">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">{{ node.name }}</h5>
+                    <span class="badge bg-{{ 'success' if node.status == 'healthy' else 'warning' if node.status == 'warning' else 'danger' }}">
+                        {{ node.status|title }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <p class="card-text"><small class="text-muted">Last Check: {{ node.last_check }}</small></p>
+                    <p class="card-text">Uptime: {{ node.uptime }}</p>
+                    
+                    <div class="row g-3 mb-3">
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h6>CPU</h6>
+                                <span>{{ node.cpu_used }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h6>Memory</h6>
+                                <span>{{ node.memory_used }}</span>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-center">
+                                <h6>Disk</h6>
+                                <span>{{ node.disk_used }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {% if node.needs_reboot %}
+                    <div class="alert alert-warning mb-3">Reboot Required</div>
+                    {% endif %}
+                </div>
+                <div class="card-footer">
+                    <button class="btn btn-danger w-100 reboot-btn" data-node="{{ node.name }}" 
+                            {% if not node.needs_reboot %}disabled{% endif %}>
+                        Reboot Node
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Filter functionality
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const nodeCards = document.querySelectorAll('.node-card');
+
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const filter = btn.dataset.filter;
+            
+            // Update active button
+            filterBtns.forEach(b => {
+                b.classList.remove('active');
+                // Remove btn-* classes and add btn-outline-*
+                b.className = b.className.replace(/btn-(?:secondary|success|warning|danger)/g, 
+                    match => 'btn-outline-' + match.split('-')[1]);
+            });
+            // Update active button style
+            btn.className = btn.className.replace('btn-outline-', 'btn-');
+            btn.classList.add('active');
+            
+            // Filter nodes
+            nodeCards.forEach(card => {
+                const parentCol = card.closest('.col-md-6');
+                if (filter === 'all' || card.dataset.status === filter) {
+                    parentCol.style.display = '';  // Reset to default display
+                } else {
+                    parentCol.style.display = 'none';
+                }
+            });
+        });
+    });
+
+    // Reboot functionality
+    const rebootBtns = document.querySelectorAll('.reboot-btn');
+    
+    rebootBtns.forEach(btn => {
+        btn.addEventListener('click', async () => {
+            if (btn.disabled) return;
+            
+            const nodeName = btn.dataset.node;
+            if (confirm(`Are you sure you want to reboot ${nodeName}?`)) {
+                try {
+                    btn.disabled = true;
+                    btn.textContent = 'Rebooting...';
+                    
+                    const response = await fetch(`/grid/${nodeName}/reboot`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok) {
+                        alert(`Success: ${result.message}`);
+                    } else {
+                        throw new Error(result.message || 'Reboot failed');
+                    }
+                } catch (error) {
+                    alert(`Error: ${error.message}`);
+                    btn.disabled = false;
+                    btn.textContent = 'Reboot Node';
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

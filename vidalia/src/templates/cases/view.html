@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Case Details -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h1>{{ case.title }}</h1>
+                <div>
+                    <a href="{{ url_for('cases.list_cases') }}" class="btn btn-secondary">Back to List</a>
+                </div>
+            </div>
+
+            <!-- Status and Metadata -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Status</h6>
+                            <span class="badge {% if case.status == 'open' %}bg-info
+                                             {% elif case.status == 'in_progress' %}bg-success
+                                             {% else %}bg-secondary{% endif %}">
+                                {{ case.status|title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Severity</h6>
+                            <span class="badge {% if case.severity == 'critical' %}bg-danger
+                                             {% elif case.severity == 'high' %}bg-warning text-dark
+                                             {% elif case.severity == 'medium' %}bg-info text-dark
+                                             {% else %}bg-success{% endif %}">
+                                {{ case.severity|title }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Priority</h6>
+                            <span class="badge {% if case.priority == 1 %}bg-danger
+                                             {% elif case.priority == 2 %}bg-warning text-dark
+                                             {% else %}bg-info text-dark{% endif %}">
+                                {{ {1: 'High', 2: 'Medium', 3: 'Low'}.get(case.priority, 'Unknown') }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">Created By</h6>
+                            <p class="card-text">{{ case.user }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Description -->
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Description</h5>
+                    <p class="card-text">{{ case.description|nl2br }}</p>
+                </div>
+            </div>
+
+            <!-- Tags -->
+            {% if case.tags %}
+            <div class="card mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Tags</h5>
+                    {% for tag in case.tags %}
+                    <span class="badge bg-secondary me-1">{{ tag }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Comments -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Comments</h5>
+                    
+                    <!-- Comments List -->
+                    {% if case.comments and case.comments|length > 0 %}
+                        {% for comment in case.comments %}
+                        <div class="card mb-2">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between">
+                                    <h6 class="card-subtitle mb-2 text-muted">{{ comment.user }}</h6>
+                                    <small class="text-muted">{{ comment.created }}</small>
+                                </div>
+                                <p class="card-text">{{ comment.text|nl2br }}</p>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted">No comments yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="col-md-4">
+            <!-- Case History -->
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Case History</h5>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <small class="text-muted">{{ case.created }}</small>
+                            <p>Case created by {{ case.user }}</p>
+                        </div>
+                        {% if case.updated|format_timestamp %}
+                        <div class="timeline-item">
+                            <small class="text-muted">{{ case.updated|format_timestamp }}</small>
+                            <p>Case updated</p>
+                        </div>
+                        {% endif %}
+                        {% if case.comments and case.comments|length > 0 %}
+                            {% for comment in case.comments %}
+                            <div class="timeline-item">
+                                <small class="text-muted">{{ comment.created }}</small>
+                                <p>Comment added by {{ comment.user }}</p>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.timeline {
+    position: relative;
+    padding-left: 1.5rem;
+}
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: #dee2e6;
+}
+.timeline-item {
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+.timeline-item::before {
+    content: '';
+    position: absolute;
+    left: -1.5rem;
+    top: 0.25rem;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #6c757d;
+    border: 2px solid #fff;
+}
+</style>
+{% endblock %}

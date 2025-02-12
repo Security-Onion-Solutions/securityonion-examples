@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+
+{% block title %}500 Internal Server Error{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="error-page">
+        <h1>500 - Internal Server Error</h1>
+        <p>An unexpected error occurred. Please try again later.</p>
+        <a href="{{ url_for('alerts.list_alerts') }}" class="btn btn-primary">Return to Alerts</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.error-page {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.error-page h1 {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    color: #dc3545;
+}
+
+.error-page p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: #6c757d;
+}
+</style>
+{% endblock %}

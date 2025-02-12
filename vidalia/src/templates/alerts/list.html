@@ -1,0 +1,313 @@
+{% extends "base.html" %}
+
+{% block title %}Alerts - Vidalia{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>Security Alerts</h1>
+    
+    {% if alerts %}
+    <div class="alert-list">
+        {% for alert in alerts %}
+        <div class="alert-item">
+            {% set message = alert.payload.message|from_json %}
+            {% set alert_data = message.alert %}
+            <div class="alert-header">
+                <h3>{{ alert_data.signature }}</h3>
+                <span class="severity {{ alert.payload['event.severity_label']|lower }}">
+                    {{ alert.payload['event.severity_label'] }}
+                    {% if alert_data.metadata.signature_severity %}
+                    ({{ alert_data.metadata.signature_severity[0] }})
+                    {% endif %}
+                </span>
+            </div>
+            
+            <div class="alert-details">
+                <div class="timestamp">
+                    <strong>Time:</strong> {{ alert.timestamp }}
+                </div>
+                
+                <div class="category">
+                    <strong>Category:</strong> {{ alert_data.category }}
+                    {% if alert_data.metadata.confidence %}
+                    (Confidence: {{ alert_data.metadata.confidence[0] }})
+                    {% endif %}
+                </div>
+
+                <div class="network-details">
+                    <div class="source">
+                        <strong>Source:</strong> 
+                        {{ message.src_ip }}:{{ message.src_port }}
+                    </div>
+                    
+                    <div class="destination">
+                        <strong>Destination:</strong>
+                        {{ message.dest_ip }}:{{ message.dest_port }}
+                    </div>
+                    
+                    <div class="protocol">
+                        <strong>Protocol:</strong> {{ message.proto|default('UNKNOWN')|upper }}
+                        {% if message.pkt_src %}
+                        (Source: {{ message.pkt_src }})
+                        {% endif %}
+                        <div class="sensor">
+                            <strong>Sensor:</strong> {{ alert.payload['observer.name']|default('Unknown') }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert-actions">
+                    <button onclick="downloadPcap('{{ alert.id }}')" 
+                            class="btn btn-primary download-pcap"
+                            id="download-btn-{{ alert.id }}">
+                        Download PCAP
+                    </button>
+                    <div id="download-status-{{ alert.id }}" class="download-status"></div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="no-alerts">
+        <p>No alerts found in the last 24 hours.</p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block styles %}
+<style>
+.alert-list {
+    margin-top: 2rem;
+}
+
+.alert-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    padding: 1rem;
+}
+
+.alert-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.alert-header h3 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.severity {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-weight: bold;
+}
+
+.severity.critical {
+    background-color: #dc3545;
+    color: white;
+}
+
+.severity.high {
+    background-color: #fd7e14;
+    color: white;
+}
+
+.severity.medium {
+    background-color: #ffc107;
+    color: black;
+}
+
+.severity.low {
+    background-color: #28a745;
+    color: white;
+}
+
+.severity.informational {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.category {
+    margin: 0.5rem 0;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.alert-details {
+    font-size: 0.9rem;
+}
+
+.network-details {
+    margin: 1rem 0;
+}
+
+.network-details > div {
+    margin-bottom: 0.5rem;
+}
+
+.sensor {
+    margin-top: 0.25rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.alert-actions {
+    margin-top: 1rem;
+}
+
+.btn-primary {
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 0.25rem;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    border-color: #0056b3;
+}
+
+.btn-primary:disabled {
+    background-color: #6c757d;
+    border-color: #6c757d;
+    cursor: not-allowed;
+}
+
+.download-status {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.no-alerts {
+    text-align: center;
+    padding: 2rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function downloadPcap(alertId) {
+    console.log(`Starting PCAP download for alert ${alertId}`);
+    const button = document.getElementById(`download-btn-${alertId}`);
+    const status = document.getElementById(`download-status-${alertId}`);
+    const originalText = button.textContent;
+    
+    try {
+        console.log('Disabling button and updating status...');
+        button.disabled = true;
+        button.textContent = 'Starting PCAP Job...';
+        status.textContent = '';
+        
+        console.log('Making initial request...');
+        // Create PCAP job
+        let response = await fetch(`/alerts/${alertId}/pcap/job`, {
+            method: 'POST'
+        });
+        console.log(`Job creation response status: ${response.status}`);
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to create PCAP job');
+        }
+        
+        const jobData = await response.json();
+        const jobId = jobData.job_id;
+        console.log(`Created job with ID: ${jobId}`);
+        
+        let attempts = 0;
+        let complete = false;
+        
+        // Poll job status
+        while (!complete && attempts < 20) { // Max 10 minutes
+            console.log(`Checking status, attempt ${attempts + 1}/20`);
+            
+            response = await fetch(`/alerts/${alertId}/pcap/status/${jobId}`);
+            console.log(`Status check response: ${response.status}`);
+            
+            const statusData = await response.json();
+            console.log('Status data:', statusData);
+            
+            if (response.status === 200) { // Complete
+                complete = true;
+            } else if (response.status === 202) { // Still processing
+                button.textContent = 'Processing...';
+                status.textContent = statusData.message;
+                
+                console.log('Waiting 30 seconds before next check...');
+                await new Promise(resolve => setTimeout(resolve, 30000));
+                attempts++;
+            } else { // Error
+                throw new Error(statusData.message || 'Job failed');
+            }
+        }
+        
+        if (!complete) {
+            throw new Error('PCAP job timed out');
+        }
+        
+        // Download PCAP file
+        console.log('Downloading PCAP file...');
+        response = await fetch(`/alerts/${alertId}/pcap/download/${jobId}`);
+        
+        if (response.ok) {
+            console.log('Request successful, checking content type...');
+            // Check if it's JSON (error) or blob (file)
+            const contentType = response.headers.get('content-type');
+            console.log(`Content-Type: ${contentType}`);
+            
+            if (contentType && contentType.includes('application/json')) {
+                console.log('Received JSON response (error)');
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to download PCAP');
+            }
+            
+            console.log('Received PCAP data, preparing download...');
+            
+            // Handle successful file download
+            const blob = await response.blob();
+            console.log('Created blob from response');
+            
+            const url = window.URL.createObjectURL(blob);
+            console.log('Created object URL for blob');
+            
+            const a = document.createElement('a');
+            const filename = response.headers.get('content-disposition')?.split('filename=')[1] || 'alert.pcap';
+            console.log(`Using filename: ${filename}`);
+            
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            console.log('Triggered download');
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            status.textContent = 'Download complete!';
+            status.style.color = 'green';
+        } else {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to download PCAP');
+        }
+    } catch (error) {
+        console.error('PCAP download error:', error);
+        status.textContent = `Error: ${error.message}`;
+        status.style.color = 'red';
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+</script>
+{% endblock %}

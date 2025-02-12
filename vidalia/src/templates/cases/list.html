@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="mb-4">
+        <h1>Cases</h1>
+    </div>
+    
+    
+    <!-- Cases Table -->
+    <div class="table-responsive">
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='title', dir='asc' if sort_by == 'title' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Title
+                            {% if sort_by == 'title' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='status', dir='asc' if sort_by == 'status' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Status
+                            {% if sort_by == 'status' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='severity', dir='asc' if sort_by == 'severity' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Severity
+                            {% if sort_by == 'severity' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='priority', dir='asc' if sort_by == 'priority' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Priority
+                            {% if sort_by == 'priority' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='user', dir='asc' if sort_by == 'user' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            User
+                            {% if sort_by == 'user' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='created', dir='asc' if sort_by == 'created' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Created
+                            {% if sort_by == 'created' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>
+                        <a href="{{ url_for('cases.list_cases', sort='updated', dir='asc' if sort_by == 'updated' and sort_dir == 'desc' else 'desc') }}" class="text-dark text-decoration-none">
+                            Updated
+                            {% if sort_by == 'updated' %}
+                                <i class="fas fa-sort-{{ 'down' if sort_dir == 'desc' else 'up' }}"></i>
+                            {% endif %}
+                        </a>
+                    </th>
+                    <th>Description</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for case in cases %}
+                <tr>
+                    <td>
+                        {% if case.id %}
+                        <a href="{{ url_for('cases.view_case', case_id=case.id) }}" class="text-decoration-none">
+                            {{ case.title }}
+                        </a>
+                        {% else %}
+                        {{ case.title }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge {% if case.status == 'open' %}bg-info
+                                         {% elif case.status == 'in_progress' %}bg-success
+                                         {% else %}bg-secondary{% endif %}">
+                            {{ case.status|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if case.severity == 'critical' %}bg-danger
+                                         {% elif case.severity == 'high' %}bg-warning text-dark
+                                         {% elif case.severity == 'medium' %}bg-info text-dark
+                                         {% else %}bg-success{% endif %}">
+                            {{ case.severity|title }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {% if case.priority == 1 %}bg-danger
+                                         {% elif case.priority == 2 %}bg-warning text-dark
+                                         {% else %}bg-info text-dark{% endif %}">
+                            {{ {1: 'High', 2: 'Medium', 3: 'Low'}.get(case.priority, 'Unknown') }}
+                        </span>
+                    </td>
+                    <td>{% if case.user %}{{ case.user }}{% elif case.user_id %}{{ case.user_id }}{% else %}Unknown User{% endif %}</td>
+                    <td>{{ case.created }}</td>
+                    <td>{{ case.updated|format_timestamp }}</td>
+                    <td>{{ case.description|truncate(100) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="8" class="text-center">No cases found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
