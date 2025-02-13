@@ -5,36 +5,40 @@
  * Elastic License 2.0.
  */
 
-import { Module } from 'vuex'
+import { Module, MutationTree, ActionTree, GetterTree } from 'vuex'
 import { RootState } from '..'
 
 export interface ThemeState {
   isDark: boolean
 }
 
+const state = () => ({
+  isDark: localStorage.getItem('theme') !== 'light'
+})
+
+const mutations: MutationTree<ThemeState> = {
+  SET_DARK_MODE(state: ThemeState, isDark: boolean) {
+    state.isDark = isDark
+    localStorage.setItem('theme', isDark ? 'dark' : 'light')
+  }
+}
+
+const actions: ActionTree<ThemeState, RootState> = {
+  toggleTheme({ commit, state }: { commit: any; state: ThemeState }) {
+    commit('SET_DARK_MODE', !state.isDark)
+  }
+}
+
+const getters: GetterTree<ThemeState, RootState> = {
+  isDark: (state: ThemeState) => state.isDark
+}
+
 const theme: Module<ThemeState, RootState> = {
   namespaced: true,
-  
-  state: () => ({
-    isDark: localStorage.getItem('theme') === 'dark'
-  }),
-  
-  mutations: {
-    SET_DARK_MODE(state, isDark: boolean) {
-      state.isDark = isDark
-      localStorage.setItem('theme', isDark ? 'dark' : 'light')
-    }
-  },
-  
-  actions: {
-    toggleTheme({ commit, state }) {
-      commit('SET_DARK_MODE', !state.isDark)
-    }
-  },
-  
-  getters: {
-    isDark: (state) => state.isDark
-  }
+  state,
+  mutations,
+  actions,
+  getters
 }
 
 export default theme
