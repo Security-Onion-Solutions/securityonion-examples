@@ -2,11 +2,15 @@
 
 A comprehensive security operations web application example that showcases Security Onion's API capabilities. Vidalia demonstrates some of the key uses for external API access for things like PCAP, case management and grid monitoring.
 
-These is just an EXAMPLE and is TOTALLY UNSUPPORTED!
+## Warnings and Disclaimers
+
+This is just an EXAMPLE and is TOTALLY UNSUPPORTED!
+
+This is not intended for production use!
 
 If this breaks anything you get to keep BOTH pieces!
 
-**Core Features:**
+## Core Features
 
 Alert Investigation:
 - Asynchronous job management for long-running PCAP operations
@@ -41,7 +45,7 @@ Technical Features:
 - HTML/CSS for frontend
 - pytest for testing
 
-**Getting Started:**
+## Getting Started
 
 Vidalia can be installed either traditionally using Python/pip or using Docker. Choose the installation method that best suits your environment.
 
@@ -105,7 +109,7 @@ Docker-specific Notes:
 - Port can be customized during startup
 - All environment variables from .env are passed to the container
 
-**Running Tests:**
+## Running Tests
 1. Configure test environment:
    - Copy `.env.example` to `.env.test` for test configuration
    - The test environment uses mock API endpoints by default (https://mock-so-api)
