@@ -1,18 +1,24 @@
 """Grid management routes for the Vidalia application"""
-from flask import Blueprint, current_app, render_template, jsonify, request, flash
+import requests
+from flask import Blueprint, render_template, jsonify, request, flash, current_app
+from src.config import get_api_client
 import json
+import logging
 import traceback
 
-bp = Blueprint('grid', __name__)
+logger = logging.getLogger(__name__)
 
-@bp.route('/grid')
+bp = Blueprint('grid', __name__, url_prefix='/grid')
+
+@bp.route('/')
 def grid_view():
     """Display grid management interface with node statuses"""
     try:
-        current_app.logger.debug("Fetching grid node statuses...")
+        logger.debug("Fetching grid node statuses...")
         # Get grid nodes from Security Onion API
-        nodes_response = current_app.so_api.get_grid_nodes()
-        current_app.logger.debug(f"Grid nodes response: {json.dumps(nodes_response, indent=2)}")
+        api_client = get_api_client()
+        nodes_response = api_client.get_grid_nodes()
+        logger.debug(f"Grid nodes response: {json.dumps(nodes_response, indent=2)}")
         
         # Transform API response into template-friendly format
         nodes = []
@@ -42,7 +48,7 @@ def grid_view():
             uptime = f"{days}d {hours}h"
             
             # Log raw node data for debugging
-            current_app.logger.debug(f"Processing node: {json.dumps(node, indent=2)}")
+            logger.debug(f"Processing node: {json.dumps(node, indent=2)}")
             
             node_data = {
                 "name": node.get("id", "unknown"),
@@ -54,7 +60,7 @@ def grid_view():
                 "memory_used": f"{node.get('memoryUsedPct', 0):.1f}%",
                 "disk_used": f"{node.get('diskUsedRootPct', 0):.1f}%"
             }
-            current_app.logger.debug(f"Transformed node data: {json.dumps(node_data, indent=2)}")
+            logger.debug(f"Transformed node data: {json.dumps(node_data, indent=2)}")
             nodes.append(node_data)
         
         if request.headers.get('Accept') == 'application/json':
@@ -62,40 +68,64 @@ def grid_view():
             
         return render_template('grid/view.html', nodes=nodes)
     except Exception as e:
-        current_app.logger.error(f"Error fetching grid status: {e}")
-        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
-        flash('Error retrieving grid status', 'error')
+        error_msg = 'Error retrieving grid status'
+        if isinstance(e, requests.exceptions.HTTPError):
+            if e.response.status_code == 405:
+                error_msg = 'Grid management is not configured on the server'
+            elif e.response.status_code == 401:
+                error_msg = 'Authentication failed'
+            elif e.response.status_code == 403:
+                error_msg = 'Insufficient permissions'
+            elif e.response.status_code == 500:
+                error_msg = 'Error retrieving grid status from server'
+            else:
+                error_msg = f'Error retrieving grid status: {str(e)}'
+        logger.error(f"{error_msg}: {str(e)}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        flash(error_msg, 'danger')  # Use Bootstrap danger class for errors
         return render_template('grid/view.html', nodes=[])
 
-@bp.route('/grid/<node_name>/reboot', methods=['POST'])
+@bp.route('/<node_name>/reboot', methods=['POST'])
 def reboot_node(node_name):
     """Trigger reboot for a specific grid node"""
+    logger.debug(f"Reboot request received for node: {node_name}")
+    api_client = get_api_client()
+    
     try:
-        current_app.logger.debug(f"Reboot request received for node: {node_name}")
-        # Get node info from grid nodes to verify ID
-        nodes_response = current_app.so_api.get_grid_nodes()
-        node = next((n for n in nodes_response if n.get("id") == node_name), None)
-        
-        if not node:
-            error_msg = f"Node '{node_name}' not found in grid nodes"
-            current_app.logger.error(error_msg)
-            return jsonify({
-                "status": "error",
-                "message": error_msg
-            }), 404
-            
-        current_app.logger.debug(f"Found matching node: {json.dumps(node, indent=2)}")
-        
         # Call Security Onion API to restart node
-        current_app.logger.debug(f"Initiating restart for node: {node_name}")
-        current_app.so_api.restart_node(node_name)
+        logger.debug(f"Initiating restart for node: {node_name}")
+        api_client.restart_node(node_name)
+        
         return jsonify({
             "status": "success",
             "message": f"Reboot initiated for node {node_name}"
         })
-    except Exception as e:
-        current_app.logger.error(f"Error rebooting node {node_name}: {e}")
+        
+    except requests.exceptions.HTTPError as e:
+        error_msg = f"Error rebooting node: {str(e)}"
+        if e.response.status_code == 405:
+            error_msg = "Grid management is not configured on the server"
+        elif e.response.status_code == 401:
+            error_msg = "Authentication failed"
+        elif e.response.status_code == 403:
+            error_msg = "Insufficient permissions"
+        elif e.response.status_code == 404:
+            error_msg = f"Node '{node_name}' not found"
+        elif e.response.status_code == 500:
+            error_msg = "Server error while rebooting node"
+        
+        logger.error(f"{error_msg}: {str(e)}")
+        logger.error(f"Response content: {e.response.text if e.response else 'No response'}")
         return jsonify({
             "status": "error",
-            "message": f"Error rebooting node: {str(e)}"
+            "message": error_msg
+        }), e.response.status_code
+        
+    except Exception as e:
+        error_msg = f"Error rebooting node: {str(e)}"
+        logger.error(f"{error_msg}")
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return jsonify({
+            "status": "error",
+            "message": error_msg
         }), 500
