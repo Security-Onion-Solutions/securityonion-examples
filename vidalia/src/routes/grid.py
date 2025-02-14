@@ -15,10 +15,10 @@ def grid_view():
     """Display grid management interface with node statuses"""
     try:
         logger.debug("Fetching grid node statuses...")
-        # Get grid members from Security Onion API
+        # Get grid nodes from Security Onion API
         api_client = get_api_client()
-        nodes_response = api_client.get_grid_members()
-        logger.debug(f"Grid members response: {json.dumps(nodes_response, indent=2)}")
+        nodes_response = api_client.get_grid_nodes()
+        logger.debug(f"Grid nodes response: {json.dumps(nodes_response, indent=2)}")
         
         # Transform API response into template-friendly format
         nodes = []

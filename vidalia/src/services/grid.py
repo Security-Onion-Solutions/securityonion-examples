@@ -94,7 +94,7 @@ class GridService:
         """
         self.api_client._ensure_authenticated()
         
-        url = f"{self.api_client.base_url}/connect/gridmembers/{node_id}/restart"
+        url = f"{self.api_client.base_url}/connect/gridmember/{node_id}/restart"
         headers = self.api_client._get_bearer_header()
         
         logger.debug(f"Attempting to restart node {node_id}")
