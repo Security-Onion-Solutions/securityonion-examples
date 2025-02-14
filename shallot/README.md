@@ -2,7 +2,7 @@
 
 A chat integration system for Security Onion that enables teams to interact with their security monitoring system through various chat platforms including Matrix, Slack, and Discord.
 
-**Warnings and Disclaimers**
+## Warnings and Disclaimers
 
 This is just an EXAMPLE and is TOTALLY UNSUPPORTED!
 
