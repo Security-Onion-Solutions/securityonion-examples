@@ -81,7 +81,7 @@
                     {% endif %}
                 </div>
                 <div class="card-footer">
-                    <button class="btn btn-danger w-100 reboot-btn" data-node="{{ node.name }}" 
+                    <button class="btn btn-danger w-100 reboot-btn" data-node="{{ node.member_id }}"
                             {% if not node.needs_reboot %}disabled{% endif %}>
                         Reboot Node
                     </button>
@@ -127,26 +127,26 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Reboot functionality
     const rebootBtns = document.querySelectorAll('.reboot-btn');
-    
+
     rebootBtns.forEach(btn => {
         btn.addEventListener('click', async () => {
             if (btn.disabled) return;
-            
-            const nodeName = btn.dataset.node;
-            if (confirm(`Are you sure you want to reboot ${nodeName}?`)) {
+
+            const memberId = btn.dataset.node; // Use member_id
+            if (confirm(`Are you sure you want to reboot the node with ID ${memberId}?`)) {
                 try {
                     btn.disabled = true;
                     btn.textContent = 'Rebooting...';
-                    
-                    const response = await fetch(`/grid/${nodeName}/reboot`, {
+
+                    const response = await fetch(`/grid/${memberId}/reboot`, { // Use member_id in URL
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'
                         }
                     });
-                    
+
                     const result = await response.json();
-                    
+
                     if (response.ok) {
                         alert(`Success: ${result.message}`);
                     } else {
