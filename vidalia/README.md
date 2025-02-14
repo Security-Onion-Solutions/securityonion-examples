@@ -57,6 +57,20 @@ Vidalia can be installed either traditionally using Python/pip or using Docker. 
 4. Install dependencies: `pip install -r requirements.txt`
 5. Start the application: `./start.sh`
 
+### API Client Permissions
+
+You will need to assign permissions to the API key you create. Here is a minimum set od permissions:
+
+Cases: Read  
+Clients: Read  
+Events: Read  
+Grid: Read, Write  
+Jobs: Pivot, Process, Read, Write  
+Nodes: Read  
+Permissions: Read  
+Roles: Read  
+Users: Read
+
 ### Docker Installation
 
 Prerequisites:
