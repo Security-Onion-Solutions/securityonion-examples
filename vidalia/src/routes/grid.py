@@ -52,8 +52,17 @@ def grid_view():
             # Log raw node data for debugging
             logger.debug(f"Processing node: {json.dumps(node, indent=2)}")
 
+            # Find corresponding member ID
+            node_name = node.get("id", "unknown")
+            member_id = "unknown"  # Default value
+            for member in members_response:
+                if member.get("name") == node_name:
+                    member_id = member.get("id")
+                    break  # Exit inner loop once found
+
             node_data = {
-                "name": node.get("id", "unknown"),
+                "name": node_name,
+                "member_id": member_id,  # Include member_id
                 "status": status,
                 "last_check": node.get("updateTime"),
                 "uptime": uptime,
@@ -92,17 +101,32 @@ def reboot_node(node_name):
     """Trigger reboot for a specific grid node"""
     logger.debug(f"Reboot request received for node: {node_name}")
     api_client = get_api_client()
-    
+
     try:
-        # Call Security Onion API to restart node
-        logger.debug(f"Initiating restart for node: {node_name}")
-        api_client.restart_node(node_name)
-        
+        # Get grid members to find the correct ID
+        members = api_client.get_grid_members()
+        node_id = None
+        for member in members:
+            if member.get("name") == node_name:
+                node_id = member.get("id")
+                break
+
+        if not node_id:
+            logger.error(f"Node '{node_name}' not found in grid members")
+            return jsonify({
+                "status": "error",
+                "message": f"Node '{node_name}' not found"
+            }), 404
+
+        # Call Security Onion API to restart node using the correct ID
+        logger.debug(f"Initiating restart for node: {node_id} (originally {node_name})")
+        api_client.restart_node(node_id)
+
         return jsonify({
             "status": "success",
             "message": f"Reboot initiated for node {node_name}"
         })
-        
+
     except requests.exceptions.HTTPError as e:
         error_msg = f"Error rebooting node: {str(e)}"
         if e.response.status_code == 405:
@@ -112,17 +136,17 @@ def reboot_node(node_name):
         elif e.response.status_code == 403:
             error_msg = "Insufficient permissions"
         elif e.response.status_code == 404:
-            error_msg = f"Node '{node_name}' not found"
+            error_msg = f"Node '{node_name}' not found"  # Keep original message for UI consistency
         elif e.response.status_code == 500:
             error_msg = "Server error while rebooting node"
-        
+
         logger.error(f"{error_msg}: {str(e)}")
         logger.error(f"Response content: {e.response.text if e.response else 'No response'}")
         return jsonify({
             "status": "error",
             "message": error_msg
         }), e.response.status_code
-        
+
     except Exception as e:
         error_msg = f"Error rebooting node: {str(e)}"
         logger.error(f"{error_msg}")
