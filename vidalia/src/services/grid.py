@@ -101,7 +101,7 @@ class GridService:
             logger.error(f"Node {node_id} not found in grid nodes")
             raise ValueError(f"Node {node_id} not found")
         
-        url = f"{self.api_client.base_url}/connect/grid/{node_id}/restart"
+        url = f"{self.api_client.base_url}/connect/grid/{node_id}/operation/restart"
         headers = self.api_client._get_bearer_header()
         
         logger.debug(f"Attempting to restart node {node_id}")
