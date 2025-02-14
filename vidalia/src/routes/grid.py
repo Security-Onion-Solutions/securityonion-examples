@@ -96,35 +96,20 @@ def grid_view():
         flash(error_msg, 'danger')  # Use Bootstrap danger class for errors
         return render_template('grid/view.html', nodes=[])
 
-@bp.route('/<node_name>/reboot', methods=['POST'])
-def reboot_node(node_name):
+@bp.route('/<member_id>/reboot', methods=['POST'])  # Change route parameter
+def reboot_node(member_id):  # Change function parameter
     """Trigger reboot for a specific grid node"""
-    logger.debug(f"Reboot request received for node: {node_name}")
+    logger.debug(f"Reboot request received for node: {member_id}")
     api_client = get_api_client()
 
     try:
-        # Get grid members to find the correct ID
-        members = api_client.get_grid_members()
-        node_id = None
-        for member in members:
-            if member.get("name") == node_name:
-                node_id = member.get("id")
-                break
-
-        if not node_id:
-            logger.error(f"Node '{node_name}' not found in grid members")
-            return jsonify({
-                "status": "error",
-                "message": f"Node '{node_name}' not found"
-            }), 404
-
-        # Call Security Onion API to restart node using the correct ID
-        logger.debug(f"Initiating restart for node: {node_id} (originally {node_name})")
-        api_client.restart_node(node_id)
+        # Call Security Onion API to restart node using the member_id
+        logger.debug(f"Initiating restart for node: {member_id}")
+        api_client.restart_node(member_id)
 
         return jsonify({
             "status": "success",
-            "message": f"Reboot initiated for node {node_name}"
+            "message": f"Reboot initiated for node {member_id}"  # Update message
         })
 
     except requests.exceptions.HTTPError as e:
@@ -136,7 +121,7 @@ def reboot_node(node_name):
         elif e.response.status_code == 403:
             error_msg = "Insufficient permissions"
         elif e.response.status_code == 404:
-            error_msg = f"Node '{node_name}' not found"  # Keep original message for UI consistency
+            error_msg = f"Node '{member_id}' not found"  # Use member_id in error message
         elif e.response.status_code == 500:
             error_msg = "Server error while rebooting node"
 
