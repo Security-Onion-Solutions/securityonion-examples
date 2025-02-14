@@ -15,18 +15,20 @@ def grid_view():
     """Display grid management interface with node statuses"""
     try:
         logger.debug("Fetching grid node statuses...")
-        # Get grid nodes from Security Onion API
+        # Get grid nodes and members from Security Onion API
         api_client = get_api_client()
         nodes_response = api_client.get_grid_nodes()
         logger.debug(f"Grid nodes response: {json.dumps(nodes_response, indent=2)}")
-        
+        members_response = api_client.get_grid_members()
+        logger.debug(f"Grid members response: {json.dumps(members_response, indent=2)}")
+
         # Transform API response into template-friendly format
         nodes = []
         for node in nodes_response:
             # Map API status to UI status (healthy, warning, error)
             raw_status = node.get("status", "unknown").lower()
             needs_reboot = node.get("osNeedsRestart", 0) == 1
-            
+
             # If node needs reboot, mark as warning regardless of status
             if needs_reboot:
                 status = "warning"
@@ -39,17 +41,17 @@ def grid_view():
                 status = "error"
             else:
                 status = "error"  # Default to error for unknown states
-                
+
             # Convert uptime seconds to readable format
             uptime_seconds = node.get("osUptimeSeconds", 0)
             days = uptime_seconds // (24 * 3600)
             remaining = uptime_seconds % (24 * 3600)
             hours = remaining // 3600
             uptime = f"{days}d {hours}h"
-            
+
             # Log raw node data for debugging
             logger.debug(f"Processing node: {json.dumps(node, indent=2)}")
-            
+
             node_data = {
                 "name": node.get("id", "unknown"),
                 "status": status,
@@ -62,10 +64,10 @@ def grid_view():
             }
             logger.debug(f"Transformed node data: {json.dumps(node_data, indent=2)}")
             nodes.append(node_data)
-        
+
         if request.headers.get('Accept') == 'application/json':
             return jsonify({'nodes': nodes})
-            
+
         return render_template('grid/view.html', nodes=nodes)
     except Exception as e:
         error_msg = 'Error retrieving grid status'
