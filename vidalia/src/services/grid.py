@@ -94,14 +94,7 @@ class GridService:
         """
         self.api_client._ensure_authenticated()
         
-        # First verify the node exists
-        members = self.get_grid_members()
-        node = next((m for m in members if m.get("id") == node_id), None)
-        if not node:
-            logger.error(f"Node {node_id} not found in grid nodes")
-            raise ValueError(f"Node {node_id} not found")
-        
-        url = f"{self.api_client.base_url}/connect/gridmembers/{node_id}/restart"
+        url = f"{self.api_client.base_url}/connect/gridmember/{node_id}/restart"
         headers = self.api_client._get_bearer_header()
         
         logger.debug(f"Attempting to restart node {node_id}")
