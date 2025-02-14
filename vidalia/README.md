@@ -2,7 +2,11 @@
 
 A comprehensive security operations web application example that showcases Security Onion's API capabilities. Vidalia demonstrates some of the key uses for external API access for things like PCAP, case management and grid monitoring.
 
-These is just an EXAMPLE and is TOTALLY UNSUPPORTED!
+**Warnings and Disclaimers**
+
+This is just an EXAMPLE and is TOTALLY UNSUPPORTED!
+
+This is not intended for production use!
 
 If this breaks anything you get to keep BOTH pieces!
 
