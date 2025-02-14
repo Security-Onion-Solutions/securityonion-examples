@@ -18,6 +18,19 @@ class Config:
         if cls._instance is None:
             cls._instance = super(Config, cls).__new__(cls)
         return cls._instance
+    # Flask configuration values
+    SECRET_KEY = os.getenv('SECRET_KEY', 'dev')
+    DEBUG = True
+    TESTING = True
+    
+    # Logging configuration
+    LOG_LEVEL = logging.DEBUG
+    PROPAGATE_EXCEPTIONS = True
+    
+    # Security Onion API configuration
+    SO_API_URL = os.getenv('SO_API_URL', 'http://SOMANAGER:443')
+    SO_CLIENT_ID = os.getenv('SO_CLIENT_ID')
+    SO_CLIENT_SECRET = os.getenv('SO_CLIENT_SECRET')
 
     def __init__(self):
         if not self._initialized:
