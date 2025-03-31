@@ -66,7 +66,7 @@ if [ "$start_container" = "y" ] || [ "$start_container" = "Y" ]; then
     echo "Starting container with port $port as user $USER_ID:$GROUP_ID..."
     docker run -d \
         --name shallot-bot \
-        -p "$port:8443" \
+        -p "0.0.0.0:$port:8443" \
         -v "$(pwd)/shallotbot/data/:/app/data/" \
         -v "$(pwd)/shallotbot/certs/:/opt/shallot/certs/" \
         -v "$(pwd)/shallotbot/.env:/opt/shallot/.env" \
@@ -86,7 +86,7 @@ else
     echo "Container not started. You can start it later with:"
     echo "docker run -d \\"
     echo "    --name shallot-bot \\"
-    echo "    -p $port:8443 \\"
+    echo "    -p 0.0.0.0:$port:8443 \\"
     echo "    -v \"\$(pwd)/shallotbot/data/:/app/data/\" \\"
     echo "    -v \"\$(pwd)/shallotbot/certs/:/opt/shallot/certs/\" \\"
     echo "    -v \"\$(pwd)/shallotbot/.env:/opt/shallot/.env\" \\"

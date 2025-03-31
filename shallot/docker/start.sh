@@ -10,23 +10,25 @@ set -e
 NGINX_UID=${NGINX_UID:-1000}
 NGINX_GID=${NGINX_GID:-1000}
 
-# Function to update nginx user/group if needed
-update_nginx_user() {
-    current_uid=$(id -u nginx 2>/dev/null || echo "0")
-    current_gid=$(id -g nginx 2>/dev/null || echo "0")
-
-    if [ "$current_uid" != "$NGINX_UID" ] || [ "$current_gid" != "$NGINX_GID" ]; then
-        echo "Updating nginx user/group to UID:${NGINX_UID} GID:${NGINX_GID}"
-        deluser nginx 2>/dev/null || true
-        delgroup nginx 2>/dev/null || true
-        addgroup -g ${NGINX_GID} nginx
-        adduser -D -u ${NGINX_UID} -G nginx -s /sbin/nologin nginx
-    fi
-}
+# Function to update nginx user/group if needed (Commented out as handled in Dockerfile for Debian base)
+# update_nginx_user() {
+#     current_uid=$(id -u nginx 2>/dev/null || echo "0")
+#     current_gid=$(id -g nginx 2>/dev/null || echo "0")
+#
+#     if [ "$current_uid" != "$NGINX_UID" ] || [ "$current_gid" != "$NGINX_GID" ]; then
+#         echo "Updating nginx user/group to UID:${NGINX_UID} GID:${NGINX_GID}"
+#         # Debian uses useradd/groupadd, handled in Dockerfile
+#         # deluser nginx 2>/dev/null || true
+#         # delgroup nginx 2>/dev/null || true
+#         # addgroup -g ${NGINX_GID} nginx
+#         # adduser -D -u ${NGINX_UID} -G nginx -s /sbin/nologin nginx
+#     fi
+# }
 
 # Function to update permissions
 update_permissions() {
-    dirs="/app/logs/nginx /app/logs/app /etc/nginx/ssl /app/data /opt/shallot /usr/share/nginx/html"
+    # Removed /opt/shallot as .env is mounted read-only inside it
+    dirs="/app/logs/nginx /app/logs/app /etc/nginx/ssl /app/data /usr/share/nginx/html"
     
     for dir in $dirs; do
         echo "Updating permissions for $dir"
@@ -46,7 +48,7 @@ update_permissions() {
 echo "$(date '+%Y-%m-%d %H:%M:%S') Container started" >> /app/logs/app/docker.log
 
 # Update nginx user if needed
-update_nginx_user
+# update_nginx_user # Handled in Dockerfile
 
 # Update permissions
 update_permissions

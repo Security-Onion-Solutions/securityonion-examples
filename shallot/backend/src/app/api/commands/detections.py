@@ -3,6 +3,17 @@
 # https://securityonion.net/license; you may not use this file except in compliance with the
 # Elastic License 2.0.
 
+"""
+Detection rule management command implementation.
+
+Required Permissions:
+- detections/read: For fetching detection rules using GET /connect/detection/public/{id}
+- detections/write: For modifying detection rules using PUT /connect/detection/
+
+Note: Permissions are assigned to API clients through Security Onion's RBAC system,
+not through OAuth 2.0 scopes.
+"""
+
 from ...models.chat_users import ChatService
 import json
 import httpx

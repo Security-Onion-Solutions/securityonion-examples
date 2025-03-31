@@ -3,6 +3,19 @@
 # https://securityonion.net/license; you may not use this file except in compliance with the
 # Elastic License 2.0.
 
+"""
+Case creation and event escalation command implementation.
+
+Required Permissions:
+- cases/read: For reading case data
+- cases/write: For creating and updating cases
+- events/read: For reading event data
+- events/write: For adding events to cases
+
+Note: Permissions are assigned to API clients through Security Onion's RBAC system,
+not through OAuth 2.0 scopes.
+"""
+
 from datetime import datetime, timedelta
 from typing import List, Optional
 from ...models.chat_users import ChatService
@@ -61,7 +74,7 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
             }
             print(f"[DEBUG] Querying event with params: {query_params}")
             
-            event_url = f"{base_url}connect/events"
+            event_url = f"{base_url}connect/events/"
             print(f"[DEBUG] Event query URL: {event_url}")
             
             response = await so_client._client.get(
@@ -95,10 +108,6 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
             if not title:
                 title = event.get("rule.name", "Escalated Event")
 
-            # Ensure token is valid before creating case
-            if not await so_client._ensure_token():
-                return f"Error creating case: Failed to obtain valid token - {so_client._last_error}"
-
             # Create case
             case_payload = {
                 "title": title,
@@ -109,18 +118,25 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
             }
             print(f"[DEBUG] Creating case with payload: {case_payload}")
             
-            case_url = f"{base_url}connect/case"
+            case_url = f"{base_url}connect/case/"
             print(f"[DEBUG] Creating case with URL: {case_url}")
-            
-            # Get fresh headers with valid token
-            headers = so_client._get_headers()
-            print(f"[DEBUG] Request headers: {headers}")
             
             case_response = await so_client._client.post(
                 case_url,
-                headers=headers,
+                headers=so_client._get_headers(),
                 json=case_payload
             )
+            
+            # If we get a 401, try refreshing token once
+            if case_response.status_code == 401:
+                print("[DEBUG] Got 401, attempting token refresh")
+                if await so_client._ensure_token():
+                    # Retry with new token
+                    case_response = await so_client._client.post(
+                        case_url,
+                        headers=so_client._get_headers(),
+                        json=case_payload
+                    )
             
             print(f"[DEBUG] Case creation response status: {case_response.status_code}")
             print(f"[DEBUG] Case creation response headers: {dict(case_response.headers)}")
@@ -149,8 +165,12 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
                 return error_msg
                 
             case = case_response.json()
+            print(f"[DEBUG] Case creation response data: {case}")
+            
             if not case or 'id' not in case:
                 return "Error: Invalid case response from server"
+                
+            print(f"[DEBUG] Using case ID: {case['id']}")
 
             # Initialize current time
             now = datetime.utcnow()
@@ -168,6 +188,8 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
                 if not isinstance(payload, dict):
                     return f"Error: Invalid event payload format for event {eventid}"
                 
+                print("[DEBUG] Adding original event")
+                
                 # Extract fields from payload
                 fields = {}
                 if isinstance(payload, dict):
@@ -179,64 +201,37 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
                         else:
                             fields[key] = value
                 
-                print(f"[DEBUG] Adding original event with fields: {fields}")
-                
                 # Get event timestamp for date range
                 event_time = datetime.strptime(event.get('timestamp', now.isoformat()), "%Y-%m-%dT%H:%M:%S.%fZ")
                 time_range_start = event_time - timedelta(hours=24)
                 time_range_end = event_time + timedelta(hours=24)
                 
+                # Create event attachment payload as per API spec
                 event_payload = {
-                    "caseId": case["id"],
-                    "fields": fields,
+                    "caseId": str(case["id"]),  # Ensure case ID is a string
+                    "fields": fields,  # Use all fields from the event payload
                     "dateRange": f"{time_range_start.strftime('%Y/%m/%d %I:%M:%S %p')} - {time_range_end.strftime('%Y/%m/%d %I:%M:%S %p')}",
                     "dateRangeFormat": "2006/01/02 3:04:05 PM",
-                    "timezone": "UTC"
+                    "timezone": "America/New_York",
+                    "acknowledged": True,  # Include acknowledged events
+                    "escalated": False  # Don't attach already escalated events
                 }
                 print(f"[DEBUG] Adding event with payload: {event_payload}")
                 
-                # Ensure token is valid before adding event
-                if not await so_client._ensure_token():
-                    return f"Error adding event to case: Failed to obtain valid token - {so_client._last_error}"
-
                 events_url = f"{base_url}connect/case/events"
                 print(f"[DEBUG] Adding event to case with URL: {events_url}")
                 
-                # Get fresh headers with valid token
-                headers = so_client._get_headers()
-                print(f"[DEBUG] Request headers: {headers}")
+                # Force token refresh before attaching event
+                so_client._access_token = None
+                if not await so_client._ensure_token():
+                    return "Error: Failed to get access token for attaching event"
+                print(f"[DEBUG] Access token before attaching original event: {so_client._access_token}")
+                print(f"[DEBUG] Event payload before attaching original event: {event_payload}")
+                add_event_response = await so_client.add_event_to_case(str(case["id"]), fields)
+
+                if not add_event_response:
+                    return "Error: Failed to attach original event to case"
                 
-                add_event_response = await so_client._client.post(
-                    events_url,
-                    headers=headers,
-                    json=event_payload
-                )
-                
-                print(f"[DEBUG] Add event response status: {add_event_response.status_code}")
-                print(f"[DEBUG] Add event response headers: {dict(add_event_response.headers)}")
-                
-                if add_event_response.status_code != 200:
-                    error_msg = f"Error adding event to case: HTTP {add_event_response.status_code}"
-                    
-                    # Get raw response content first
-                    raw_response = add_event_response.text
-                    print(f"[DEBUG] Add event raw response: '{raw_response}'")
-                    
-                    # Only try JSON parsing if we have content
-                    if raw_response.strip():
-                        try:
-                            error_data = add_event_response.json()
-                            print(f"[DEBUG] Event attachment error response (parsed): {error_data}")
-                            if isinstance(error_data, dict) and 'message' in error_data:
-                                error_msg += f" - {error_data['message']}"
-                        except Exception as e:
-                            print(f"[DEBUG] Failed to parse error response: {str(e)}")
-                            error_msg += f" - Raw response: {raw_response[:200]}"  # Include truncated raw response
-                    else:
-                        print("[DEBUG] Add event response was empty")
-                        error_msg += " - Empty response from server"
-                    
-                    return error_msg
                 return f"Created case {case['id']} with original event (no community ID found for related events)"
 
             # Search for related events
@@ -256,7 +251,7 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
             print(f"[DEBUG] Searching for related events with params: {hunt_params}")
             
             hunt_response = await so_client._client.get(
-                f"{base_url}connect/events",
+                f"{base_url}connect/events/",
                 headers=so_client._get_headers(),
                 params=hunt_params
             )
@@ -279,6 +274,8 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
                     print(f"[DEBUG] Skipping event - payload is not a dict")
                     continue
                 
+                print(f"[DEBUG] Adding event {event_count + 1}")
+                
                 # Extract fields from payload
                 fields = {}
                 if isinstance(payload, dict):
@@ -290,63 +287,32 @@ async def process(command: str, platform: str, user_id: str, username: str, chan
                         else:
                             fields[key] = value
                 
-                print(f"[DEBUG] Adding event {event_count + 1} with fields: {fields}")
-                # Get event timestamp for date range
-                event_time = datetime.strptime(event.get('timestamp', now.isoformat()), "%Y-%m-%dT%H:%M:%S.%fZ")
-                time_range_start = event_time - timedelta(hours=24)
-                time_range_end = event_time + timedelta(hours=24)
-                
+                # Create event attachment payload as per API spec
                 event_payload = {
-                    "caseId": case["id"],
-                    "fields": fields,
-                    "dateRange": f"{time_range_start.strftime('%Y/%m/%d %I:%M:%S %p')} - {time_range_end.strftime('%Y/%m/%d %I:%M:%S %p')}",
+                    "caseId": str(case["id"]),  # Ensure case ID is a string
+                    "fields": fields,  # Use all fields from the event payload
+                    "dateRange": f"{time_24h_ago.strftime('%Y/%m/%d %I:%M:%S %p')} - {now.strftime('%Y/%m/%d %I:%M:%S %p')}",
                     "dateRangeFormat": "2006/01/02 3:04:05 PM",
-                    "timezone": "UTC"
+                    "timezone": "America/New_York",
+                    "acknowledged": True,  # Include acknowledged events
+                    "escalated": False  # Don't attach already escalated events
                 }
                 print(f"[DEBUG] Adding related event {event_count + 1} with payload: {event_payload}")
                 
-                # Ensure token is valid before adding related event
-                if not await so_client._ensure_token():
-                    return f"Error adding related event to case: Failed to obtain valid token - {so_client._last_error}"
-
                 events_url = f"{base_url}connect/case/events"
                 print(f"[DEBUG] Adding related event to case with URL: {events_url}")
-                
-                # Get fresh headers with valid token
-                headers = so_client._get_headers()
-                print(f"[DEBUG] Request headers: {headers}")
-                
-                add_event_response = await so_client._client.post(
-                    events_url,
-                    headers=headers,
-                    json=event_payload
-                )
-                
-                print(f"[DEBUG] Add related event response status: {add_event_response.status_code}")
-                print(f"[DEBUG] Add related event response headers: {dict(add_event_response.headers)}")
-                
-                if add_event_response.status_code not in [200, 202]:
-                    error_msg = f"Error adding related event to case: HTTP {add_event_response.status_code}"
-                    
-                    # Get raw response content first
-                    raw_response = add_event_response.text
-                    print(f"[DEBUG] Add related event raw response: '{raw_response}'")
-                    
-                    # Only try JSON parsing if we have content
-                    if raw_response.strip():
-                        try:
-                            error_data = add_event_response.json()
-                            print(f"[DEBUG] Related event attachment error response (parsed): {error_data}")
-                            if isinstance(error_data, dict) and 'message' in error_data:
-                                error_msg += f" - {error_data['message']}"
-                        except Exception as e:
-                            print(f"[DEBUG] Failed to parse error response: {str(e)}")
-                            error_msg += f" - Raw response: {raw_response[:200]}"  # Include truncated raw response
-                    else:
-                        print("[DEBUG] Add related event response was empty")
-                        error_msg += " - Empty response from server"
-                    
-                    return error_msg
+
+                # Force token refresh before attaching event
+                so_client._access_token = None
+                if not await so_client._ensure_token():
+                    return "Error: Failed to get access token for attaching related event"
+                print(f"[DEBUG] Access token before attaching related event: {so_client._access_token}")
+                print(f"[DEBUG] Event payload before attaching related event: {event_payload}")
+                add_event_response = await so_client.add_event_to_case(str(case["id"]), fields)
+
+                if not add_event_response:
+                    return "Error: Failed to attach related event to case"
+
                 event_count += 1
 
             return f"Created case {case['id']} with {event_count} related events"

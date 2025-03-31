@@ -263,6 +263,7 @@ class SecurityOnionClient:
                                 expires_in = int(data["expires_in"]) - 300
                                 self._token_expires = datetime.utcnow() + timedelta(seconds=expires_in)
                                 print("Successfully obtained new token")
+                                print(f"[DEBUG] New token: {self._access_token}")
                                 return True
                             else:
                                 last_error = f"Unexpected response type ({content_type})"
@@ -421,13 +422,13 @@ class SecurityOnionClient:
             self._last_error = f"Failed to search events: {str(e)}"
             return []
 
-    async def add_event_to_case(self, case_id: str, event: Dict[str, Any]) -> bool:
+    async def add_event_to_case(self, case_id: str, event_fields: Dict[str, Any]) -> bool:
         """Add an event to a case.
-        
+
         Args:
             case_id: The ID of the case
-            event: The event data to add
-            
+            event_fields: The event fields to add
+
         Returns:
             bool: True if successful, False otherwise
         """
@@ -435,16 +436,31 @@ class SecurityOnionClient:
             if not await self._ensure_token():
                 return False
 
+            # First attempt
             response = await self._client.post(
-                "connect/case/events/",
+                "connect/case/events",
                 headers=self._get_headers(),
                 json={
                     "caseId": case_id,
-                    "fields": event
+                    "fields": event_fields
                 }
             )
-            
-            return response.status_code == 200
+
+            # If unauthorized, try refreshing token and retry once
+            # if response.status_code == 401:
+            #     print("[DEBUG] Got 401, attempting token refresh")
+            #     if await self._ensure_token():
+            #         print("[DEBUG] Token refreshed, retrying request")
+            #         response = await self._client.post(
+            #             "connect/case/events",
+            #             headers=self._get_headers(),  # Get fresh headers with new token
+            #             json={
+            #                 "caseId": case_id,
+            #                 "fields": event_fields
+            #             }
+            #         )
+
+            return response.status_code in [200, 202]
             
         except Exception as e:
             self._last_error = f"Failed to add event to case: {str(e)}"

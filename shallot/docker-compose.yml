@@ -1,0 +1,43 @@
+# version: '3.8' # Removed obsolete version attribute
+
+services:
+  shallot:
+    build:
+      context: .
+      args:
+        # Pass host user/group ID during build if needed by Dockerfile
+        NGINX_UID: ${UID:-1000}
+        NGINX_GID: ${GID:-1000}
+    container_name: shallot-bot
+    ports:
+      # Map host port (default 443) to container port 8443
+      # Use SHALLOT_PORT environment variable or default to 443
+      - "0.0.0.0:${SHALLOT_PORT:-443}:8443"
+    volumes:
+      # Use relative paths for volumes based on compose file location
+      # Assumes shallotbot directory structure exists relative to compose file
+      - ./shallotbot/data/:/app/data/
+      - ./shallotbot/certs/:/opt/shallot/certs/
+      - ./shallotbot/.env:/opt/shallot/.env:ro # Mount .env read-only
+      - ./shallotbot/logs/:/app/logs/
+    environment:
+      # Pass host user/group ID to the container runtime
+      NGINX_UID: ${UID:-1000}
+      NGINX_GID: ${GID:-1000}
+      # Add any other necessary runtime environment variables here
+      # Example: TZ: America/New_York
+    restart: unless-stopped
+    network_mode: bridge # Connect to Docker's default bridge network
+
+# Note:
+# 1. Ensure the 'shallotbot' directory structure (data, certs, logs, .env) exists
+#    relative to this docker-compose.yml file before running 'docker compose up'.
+#    The './generate-environment.sh' script likely handles this.
+# 2. Set the SHALLOT_PORT environment variable if you want to use a port other than 443.
+#    Example: export SHALLOT_PORT=9595
+# 3. Docker Compose automatically reads a '.env' file in the same directory.
+#    You can define SHALLOT_PORT, UID, GID there if preferred.
+#    Example .env file:
+#    SHALLOT_PORT=9595
+#    UID=1000
+#    GID=1000
