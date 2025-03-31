@@ -27,7 +27,7 @@ services:
       # Add any other necessary runtime environment variables here
       # Example: TZ: America/New_York
     restart: unless-stopped
-    network_mode: bridge # Connect to Docker's default bridge network
+    # network_mode: bridge # Removed to use Compose default network
 
 # Note:
 # 1. Ensure the 'shallotbot' directory structure (data, certs, logs, .env) exists
