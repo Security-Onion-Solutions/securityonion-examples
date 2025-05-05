@@ -50,6 +50,8 @@ dist-ssr/
 app.db
 matrix_store_*.db
 *.log
+CLAUDE.md
+shallotbot/certs/
 
 # Cline specific
 .clinerules
