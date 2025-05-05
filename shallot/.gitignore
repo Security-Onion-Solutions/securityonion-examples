@@ -50,6 +50,7 @@ dist-ssr/
 app.db
 matrix_store_*.db
 *.log
+shallotbot/logs/
 CLAUDE.md
 shallotbot/certs/
 shallotbot/.env
