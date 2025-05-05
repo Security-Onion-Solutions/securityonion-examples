@@ -52,6 +52,11 @@ matrix_store_*.db
 *.log
 CLAUDE.md
 shallotbot/certs/
+shallotbot/.env
+*.key
+*.pem
+venv/
+.venv/
 
 # Cline specific
 .clinerules
