@@ -33,12 +33,20 @@ wheels/
 # Virtual Environment
 venv/
 ENV/
+testvenv/
 
 # IDE
 .idea/
 .vscode/
 *.swp
 *.swo
+
+# Project-specific files
+CLAUDE.md
+
+# Coverage
+.coverage
+.coverage.*
 
 # Docker
 .docker/

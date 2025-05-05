@@ -17,23 +17,23 @@ cd "$(dirname "$0")"
 echo -e "${GREEN}Starting Vidalia setup...${NC}"
 
 # Check for required packages
-if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Error: python3 is not installed${NC}"
-    echo -e "${YELLOW}Please install python3 with: sudo apt install python3${NC}"
+if ! command -v python3.13 &> /dev/null; then
+    echo -e "${RED}Error: python3.13 is not installed${NC}"
+    echo -e "${YELLOW}Please install python3.13${NC}"
     exit 1
 fi
 
-# Check for python3-venv
-if ! dpkg -l | grep -q python3-venv; then
-    echo -e "${RED}Error: python3-venv is not installed${NC}"
-    echo -e "${YELLOW}Please install it with: sudo apt install python3-venv${NC}"
+# Check for python3.13-venv
+if ! dpkg -l | grep -q python3.13-venv; then
+    echo -e "${RED}Error: python3.13-venv is not installed${NC}"
+    echo -e "${YELLOW}Please install it with: sudo apt install python3.13-venv${NC}"
     exit 1
 fi
 
 # Check if virtual environment exists
 if [ ! -d "venv" ]; then
     echo -e "${YELLOW}Creating virtual environment...${NC}"
-    if ! python3 -m venv venv; then
+    if ! python3.13 -m venv venv; then
         echo -e "${RED}Error: Failed to create virtual environment${NC}"
         exit 1
     fi
@@ -45,7 +45,7 @@ if [ ! -f "venv/bin/activate" ]; then
     echo -e "${RED}Error: Virtual environment activation script not found${NC}"
     echo -e "${YELLOW}Trying to recreate virtual environment...${NC}"
     rm -rf venv
-    if ! python3 -m venv venv; then
+    if ! python3.13 -m venv venv; then
         echo -e "${RED}Error: Failed to recreate virtual environment${NC}"
         exit 1
     fi
@@ -85,7 +85,7 @@ fi
 if [ ! -f ".env" ]; then
     echo -e "${YELLOW}Creating .env file template...${NC}"
     # Generate a random secret key
-    RANDOM_SECRET=$(python3 -c 'import secrets; print(secrets.token_hex(24))')
+    RANDOM_SECRET=$(python3.13 -c 'import secrets; print(secrets.token_hex(24))')
     
     cat > .env << EOL
 # Flask configuration

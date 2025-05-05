@@ -48,9 +48,15 @@ class Config:
             self.PROPAGATE_EXCEPTIONS = True
             
             # Security Onion API configuration
-            self.SO_API_URL = os.getenv('SO_API_URL', 'http://SOMANAGER:443')
-            self.SO_CLIENT_ID = os.getenv('SO_CLIENT_ID')
-            self.SO_CLIENT_SECRET = os.getenv('SO_CLIENT_SECRET')
+            # Force the API URL to mock-so-api in testing environment
+            if os.getenv('FLASK_ENV') == 'testing':
+                self.SO_API_URL = 'https://mock-so-api'
+                self.SO_CLIENT_ID = os.getenv('SO_CLIENT_ID', 'test_client_id') 
+                self.SO_CLIENT_SECRET = os.getenv('SO_CLIENT_SECRET', 'test_client_secret')
+            else:
+                self.SO_API_URL = os.getenv('SO_API_URL', 'http://SOMANAGER:443')
+                self.SO_CLIENT_ID = os.getenv('SO_CLIENT_ID')
+                self.SO_CLIENT_SECRET = os.getenv('SO_CLIENT_SECRET')
             
             self._initialized = True
     

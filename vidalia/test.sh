@@ -14,9 +14,9 @@ handle_error() {
     exit 1
 }
 
-# Ensure python3-venv is installed
-if ! command -v python3 &> /dev/null; then
-    handle_error "Python 3 is not installed. Please install Python 3 first."
+# Ensure python3.13 is installed
+if ! command -v python3.13 &> /dev/null; then
+    handle_error "Python 3.13 is not installed. Please install Python 3.13 first."
 fi
 
 # Remove existing venv if it exists
@@ -27,7 +27,7 @@ fi
 
 # Create fresh virtual environment
 echo "Creating virtual environment..."
-python3 -m venv venv || handle_error "Failed to create virtual environment. Try installing python3-venv package if needed."
+python3.13 -m venv venv || handle_error "Failed to create virtual environment. Try installing python3.13-venv package if needed."
 
 # Ensure virtual environment was created
 if [ ! -f "venv/bin/activate" ]; then
@@ -47,9 +47,9 @@ fi
 echo "Installing requirements..."
 venv/bin/pip install -r requirements.txt || handle_error "Failed to install requirements"
 
-# Run tests with verbose output
-echo "Running tests..."
-python -m pytest -v || handle_error "Tests failed"
+# Run tests with verbose output and text coverage report
+echo "Running tests with coverage..."
+python -m pytest -v --cov=src --cov-report=term || handle_error "Tests failed"
 
 # Deactivate virtual environment
 deactivate

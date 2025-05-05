@@ -6,6 +6,10 @@ import responses
 os.environ.clear()
 os.environ['FLASK_ENV'] = 'testing'
 os.environ['ENV_FILE'] = '.env.test'
+# Force these values for tests
+os.environ['SO_API_URL'] = 'https://mock-so-api'
+os.environ['SO_CLIENT_ID'] = 'test_client_id'
+os.environ['SO_CLIENT_SECRET'] = 'test_client_secret'
 
 # Now import app code after environment is configured
 from flask import Flask
