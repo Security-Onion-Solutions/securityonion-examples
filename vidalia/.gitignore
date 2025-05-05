@@ -40,5 +40,9 @@ ENV/
 *.swp
 *.swo
 
+# Coverage
+.coverage
+.coverage.*
+
 # Docker
 .docker/

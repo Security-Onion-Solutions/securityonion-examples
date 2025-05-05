@@ -1,0 +1,24 @@
+FROM python:3.13-slim
+
+WORKDIR /app
+
+# Copy requirements and configuration files first (better caching)
+COPY requirements.txt .
+COPY .coveragerc .
+
+# Install requirements
+RUN pip install -r requirements.txt
+
+# Copy application code
+COPY . .
+
+# Set environment variables
+ENV PYTHONPATH=/app
+ENV FLASK_APP=src/app.py
+ENV FLASK_ENV=testing
+ENV SO_API_URL=https://mock-so-api
+ENV SO_CLIENT_ID=test_client_id
+ENV SO_CLIENT_SECRET=test_client_secret
+
+# Run tests with coverage and show all failures
+CMD ["python", "-m", "pytest", "-v", "--cov=src", "--cov-report=term"]
