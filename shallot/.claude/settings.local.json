@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./verify-python-version.sh:*)",
+      "Bash(chmod:*)",
+      "Bash(find:*)"
+    ],
+    "deny": []
+  }
+}
