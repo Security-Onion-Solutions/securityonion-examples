@@ -10,6 +10,12 @@
     <v-row align="center" justify="center">
       <v-col cols="12" sm="8" md="6" lg="4">
         <v-card>
+          <v-img
+            src="/shallot.png"
+            class="mx-auto mt-4"
+            max-width="200"
+            alt="Shallot Logo"
+          />
           <v-card-title class="text-center">
             Login to Shallot
           </v-card-title>

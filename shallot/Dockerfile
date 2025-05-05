@@ -8,7 +8,7 @@ COPY frontend/ .
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM python:3.11-slim AS backend-builder
+FROM python:3.13-slim AS backend-builder
 WORKDIR /app
 
 # Copy the entire backend directory
@@ -27,8 +27,7 @@ RUN pip install "poetry==1.6.1" && \
     poetry config virtualenvs.create false
 
 # Verify package directory exists and install dependencies
-RUN ls -la && \
-    poetry install --only main --no-interaction --no-ansi
+RUN ls -la # Removed poetry install from builder stage, handled in final stage via pip
 
 # Stage 3: Generate SSL Certificate
 FROM alpine:latest AS cert-generator
@@ -39,31 +38,30 @@ RUN openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -subj "/C=US/ST=State/L=City/O=Organization/CN=localhost"
 
 # Stage 4: Final Image
-FROM nginx:alpine
+FROM python:3.13-slim
 
 # Add support for dynamic UID/GID
 ARG NGINX_UID=1000
 ARG NGINX_GID=1000
 
-# Create nginx user with dynamic UID/GID
-RUN deluser nginx && \
-    addgroup -g ${NGINX_GID} nginx && \
-    adduser -D -u ${NGINX_UID} -G nginx -s /sbin/nologin nginx
+# Install Nginx and necessary tools for runtime and pip installs
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    nginx \
+    netcat-openbsd \
+    build-essential \
+    gcc \
+    libc6-dev \
+    libffi-dev \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    python3 \
-    py3-pip \
-    netcat-openbsd \
-    gcc \
-    musl-dev \
-    python3-dev \
-    libffi-dev \
-    openssl-dev
-
+# Python 3.13 and pip are included in the base image.
+# build-essential, gcc, libc6-dev, libffi-dev, openssl installed above.
+# netcat-openbsd also installed above.
 # Install Python packages in groups to better handle dependencies
-RUN pip3 install --break-system-packages \
+RUN pip install \
     uvicorn \
     fastapi \
     sqlalchemy \
@@ -78,23 +76,23 @@ RUN pip3 install --break-system-packages \
     dnspython
 
 # Install cryptography-related packages
-RUN pip3 install --break-system-packages \
+RUN pip install \
     cryptography \
     python-jose[cryptography] \
     passlib[bcrypt]
 
 # Install chat platform packages
-RUN pip3 install --break-system-packages \
+RUN pip install \
     discord.py \
     slack-sdk \
     botbuilder-core
 
 # Install Matrix-related packages
-RUN pip3 install --break-system-packages \
+RUN pip install \
     matrix-nio
 
 # Install remaining packages
-RUN pip3 install --break-system-packages \
+RUN pip install \
     alembic \
     python-whois
 
@@ -102,7 +100,7 @@ RUN pip3 install --break-system-packages \
 ENV PYTHONPATH=/app/src
 
 # Copy backend and dependencies
-COPY --from=backend-builder /usr/local/lib/python3.11/site-packages/ /usr/local/lib/python3.11/site-packages/
+COPY --from=backend-builder /usr/local/lib/python3.13/site-packages/ /usr/local/lib/python3.13/site-packages/
 COPY backend/src/app /app/src/app
 COPY docs /docs
 
@@ -118,9 +116,16 @@ COPY --from=cert-generator /certs/private.key /etc/nginx/ssl/private.key
 COPY --from=cert-generator /certs/certificate.crt /etc/nginx/ssl/certificate.crt
 
 # Create necessary directories and set permissions
-RUN mkdir -p /etc/nginx/ssl /app/data /opt/shallot && \
-    chown -R nginx:nginx /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/conf.d && \
-    chmod -R 755 /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/conf.d
+# Create nginx user/group with dynamic UID/GID (Debian way)
+# Use -r for system user/group. Add || commands for idempotency if needed.
+RUN groupadd -r -g ${NGINX_GID} nginx || groupmod -g ${NGINX_GID} nginx && \
+    useradd -r -u ${NGINX_UID} -g nginx -s /sbin/nologin nginx || usermod -u ${NGINX_UID} -g ${NGINX_GID} nginx
+
+# Create necessary directories and set permissions
+RUN mkdir -p /etc/nginx/ssl /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/sites-enabled /var/lib/nginx/tmp && \
+    chown -R nginx:nginx /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/sites-enabled /var/lib/nginx && \
+    chmod -R 755 /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/sites-enabled /var/lib/nginx && \
+    chmod 777 /var/lib/nginx/tmp # Ensure nginx can write here
 
 # Create symlink for .env file
 RUN ln -s /opt/shallot/.env /app/.env
@@ -146,8 +151,12 @@ RUN ln -sf /app/logs/nginx/access.log /var/log/nginx/access.log && \
     ln -sf /app/logs/nginx/error.log /var/log/nginx/error.log
 
 # Copy nginx configurations and startup script
+# Main Nginx config
 COPY docker/main_nginx.conf /etc/nginx/nginx.conf
-COPY docker/nginx.conf /etc/nginx/conf.d/default.conf
+# Site config
+COPY docker/nginx.conf /etc/nginx/sites-available/default
+# Enable site
+RUN ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
 

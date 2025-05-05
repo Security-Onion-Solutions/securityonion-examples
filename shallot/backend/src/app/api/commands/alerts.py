@@ -3,6 +3,16 @@
 # https://securityonion.net/license; you may not use this file except in compliance with the
 # Elastic License 2.0.
 
+"""
+Alert listing command implementation.
+
+Required Permissions:
+- events/read: For querying alerts via GET /connect/events
+
+Note: Permissions are assigned to API clients through Security Onion's RBAC system,
+not through OAuth 2.0 scopes.
+"""
+
 from ...models.chat_users import ChatService
 from datetime import datetime, timedelta
 import json
