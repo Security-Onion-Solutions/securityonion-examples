@@ -50,8 +50,12 @@ dist-ssr/
 app.db
 matrix_store_*.db
 *.log
+nginx.pid
+shallotbot/certs/
+shallotbot/logs/
 
 # Cline specific
 .clinerules
 cline_docs/
 memory-bank/
+CLAUDE.md
