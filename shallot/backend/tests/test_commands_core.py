@@ -64,8 +64,7 @@ def mock_command():
     return Command(
         name="test",
         description="Test command",
-        usage="!test [arg]",
-        examples=["!test", "!test arg"],
+        example="!test",  # Changed from examples (list) to example (str) and removed usage
         platforms=["DISCORD", "SLACK"],
         permission=CommandPermission.BASIC
     )
