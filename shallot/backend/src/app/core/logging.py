@@ -7,7 +7,9 @@ from ..services.settings import get_setting
 from ..database import AsyncSessionLocal
 
 # Create logs directory if it doesn't exist
-os.makedirs("/app/logs/app", exist_ok=True)
+# Use a relative path for logs in development/testing
+log_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), "logs", "app")
+os.makedirs(log_dir, exist_ok=True)
 
 # Global variables for loggers and handler
 root_logger = None
@@ -29,7 +31,8 @@ def setup_logging():
     aiosqlite_logger = logging.getLogger("aiosqlite")
     
     # File handler
-    file_handler = logging.FileHandler("/app/logs/app/backend.log")
+    log_file = os.path.join(log_dir, "backend.log")
+    file_handler = logging.FileHandler(log_file)
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     file_handler.setFormatter(formatter)
     
