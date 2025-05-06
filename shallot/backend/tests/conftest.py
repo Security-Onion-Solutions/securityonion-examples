@@ -1,10 +1,18 @@
 """Test fixtures for the backend."""
 import pytest
+import os
+import sys
 from unittest.mock import patch
 from tests.utils import VALID_TEST_KEY
+from cryptography.fernet import Fernet
 
+# Ensure the src directory is in the Python path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-@pytest.fixture(autouse=True)
+# Set the encryption key environment variable before any imports
+os.environ['ENCRYPTION_KEY'] = VALID_TEST_KEY
+
+@pytest.fixture(scope="session", autouse=True)
 def mock_encryption_key():
     """
     Automatically mock the encryption key for all tests.

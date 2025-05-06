@@ -1,6 +1,6 @@
 import pytest
-from ..app.core.permissions import CommandPermission, has_permission, get_command_permission
-from ..app.models.chat_users import ChatUserRole
+from app.core.permissions import CommandPermission, has_permission, get_command_permission
+from app.models.chat_users import ChatUserRole
 
 @pytest.mark.asyncio
 async def test_has_permission():
@@ -37,8 +37,8 @@ def test_get_command_permission():
 @pytest.mark.asyncio
 async def test_command_decorator():
     """Test the requires_permission decorator."""
-    from ..app.core.decorators import requires_permission
-    from ..app.models.chat_users import ChatUser, ChatService
+    from app.core.decorators import requires_permission
+    from app.models.chat_users import ChatUser, ChatService
     
     # Create a test command
     @requires_permission()

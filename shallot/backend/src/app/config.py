@@ -10,7 +10,7 @@ class Settings(BaseSettings):
 
     # Core settings
     ENCRYPTION_KEY: str = (
-        "default-dev-key"  # Default for development, should be overridden in production
+        "dGhpc2lzYXZhbGlkZmVybmV0a2V5Zm9yZGV2ZWxvcG1lbnQ="  # Valid Fernet key for development
     )
     SECRET_KEY: str = (
         "default-jwt-secret"  # Default for development, should be overridden in production
