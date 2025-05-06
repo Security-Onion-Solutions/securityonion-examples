@@ -31,7 +31,13 @@ def mock_so_client():
 @pytest.mark.asyncio
 async def test_alerts_command_no_connection():
     """Test alerts command with no Security Onion connection."""
-    with patch("app.api.commands.alerts.client") as mock_client:
+    with patch("app.api.commands.alerts.client") as mock_client, \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+        
         # Set client as not connected
         mock_client._connected = False
         
@@ -45,7 +51,13 @@ async def test_alerts_command_no_connection():
 @pytest.mark.asyncio
 async def test_alerts_command_with_alerts(mock_so_client):
     """Test alerts command with alerts."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock response with alerts
         alert_data = {
             "events": [
@@ -128,7 +140,13 @@ async def test_alerts_command_with_alerts(mock_so_client):
 @pytest.mark.asyncio
 async def test_alerts_command_no_alerts(mock_so_client):
     """Test alerts command with no alerts."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock response with no alerts
         mock_response = AsyncMock()
         mock_response.status_code = 200
@@ -147,7 +165,13 @@ async def test_alerts_command_no_alerts(mock_so_client):
 @pytest.mark.asyncio
 async def test_alerts_command_api_error(mock_so_client):
     """Test alerts command with API error."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock API error
         mock_so_client._client.get.side_effect = httpx.HTTPError("Connection failed")
         
@@ -162,7 +186,13 @@ async def test_alerts_command_api_error(mock_so_client):
 @pytest.mark.asyncio
 async def test_alerts_command_malformed_response(mock_so_client):
     """Test alerts command with malformed API response."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock malformed response
         mock_response = AsyncMock()
         mock_response.status_code = 200
@@ -180,7 +210,13 @@ async def test_alerts_command_malformed_response(mock_so_client):
 @pytest.mark.asyncio
 async def test_alerts_command_invalid_alert_data(mock_so_client):
     """Test alerts command with invalid alert data."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock response with invalid alert data
         alert_data = {
             "events": [
@@ -214,7 +250,13 @@ async def test_alerts_command_invalid_alert_data(mock_so_client):
 @pytest.mark.asyncio
 async def test_alerts_command_missing_alert_field(mock_so_client):
     """Test alerts command with missing alert field in response."""
-    with patch("app.api.commands.alerts.client", mock_so_client):
+    with patch("app.api.commands.alerts.client", mock_so_client), \
+         patch("app.core.decorators.get_chat_user_by_platform_id") as mock_get_user:
+        # Mock user with ADMIN role
+        mock_admin_user = MagicMock()
+        mock_admin_user.role = ChatUserRole.ADMIN
+        mock_get_user.return_value = mock_admin_user
+
         # Mock response with missing alert field
         alert_data = {
             "events": [

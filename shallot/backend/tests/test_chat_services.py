@@ -133,7 +133,7 @@ async def test_discord_get_display_name():
 @pytest.mark.asyncio
 async def test_discord_send_file(mock_discord_client):
     """Test Discord send_file."""
-    with patch("app.core.chat_services.discord.client", mock_discord_client):
+    with patch("app.core.discord.client", mock_discord_client):
         discord_service = DiscordService()
         
         # Test sending file with channel ID
@@ -159,7 +159,7 @@ async def test_discord_send_file(mock_discord_client):
 @pytest.mark.asyncio
 async def test_discord_send_file_error(mock_discord_client):
     """Test Discord send_file with errors."""
-    with patch("app.core.chat_services.discord.client", mock_discord_client):
+    with patch("app.core.discord.client", mock_discord_client):
         discord_service = DiscordService()
         
         # Mock channel not found
@@ -186,7 +186,7 @@ async def test_discord_send_file_error(mock_discord_client):
 @pytest.mark.asyncio
 async def test_discord_send_message(mock_discord_client):
     """Test Discord send_message."""
-    with patch("app.core.chat_services.discord.client", mock_discord_client):
+    with patch("app.core.discord.client", mock_discord_client):
         discord_service = DiscordService()
         
         # Test sending message
@@ -200,7 +200,7 @@ async def test_discord_send_message(mock_discord_client):
 @pytest.mark.asyncio
 async def test_discord_process_command():
     """Test Discord process_command."""
-    with patch("app.core.chat_services.process_command") as mock_process, \
+    with patch("app.api.commands.process_command") as mock_process, \
          patch.object(DiscordService, "format_message") as mock_format, \
          patch.object(DiscordService, "send_message") as mock_send:
         discord_service = DiscordService()
@@ -234,7 +234,7 @@ async def test_discord_process_command():
 @pytest.mark.asyncio
 async def test_discord_process_command_send_fails():
     """Test Discord process_command with send failure."""
-    with patch("app.core.chat_services.process_command") as mock_process, \
+    with patch("app.api.commands.process_command") as mock_process, \
          patch.object(DiscordService, "format_message") as mock_format, \
          patch.object(DiscordService, "send_message") as mock_send:
         discord_service = DiscordService()
@@ -259,7 +259,7 @@ async def test_discord_process_command_send_fails():
 @pytest.mark.asyncio
 async def test_discord_process_command_no_response():
     """Test Discord process_command when no response is returned from command processing."""
-    with patch("app.core.chat_services.process_command") as mock_process, \
+    with patch("app.api.commands.process_command") as mock_process, \
          patch.object(DiscordService, "format_message") as mock_format, \
          patch.object(DiscordService, "send_message") as mock_send:
         discord_service = DiscordService()
@@ -311,7 +311,7 @@ async def test_slack_validate_user_id():
 @pytest.mark.asyncio
 async def test_slack_get_display_name(mock_slack_client):
     """Test Slack get_display_name."""
-    with patch("app.core.chat_services.slack.client", mock_slack_client):
+    with patch("app.core.slack.client", mock_slack_client):
         slack_service = SlackService()
         
         # Test getting display name
@@ -360,7 +360,7 @@ async def test_slack_get_display_name(mock_slack_client):
 @pytest.mark.asyncio
 async def test_slack_send_file(mock_slack_client):
     """Test Slack send_file."""
-    with patch("app.core.chat_services.slack.client", mock_slack_client):
+    with patch("app.core.slack.client", mock_slack_client):
         slack_service = SlackService()
         
         # Test sending file with channel ID
@@ -388,7 +388,7 @@ async def test_slack_send_file(mock_slack_client):
 @pytest.mark.asyncio
 async def test_slack_send_file_error(mock_slack_client):
     """Test Slack send_file with errors."""
-    with patch("app.core.chat_services.slack.client", mock_slack_client):
+    with patch("app.core.slack.client", mock_slack_client):
         slack_service = SlackService()
         
         # Mock client is not initialized
@@ -416,7 +416,7 @@ async def test_slack_send_file_error(mock_slack_client):
 @pytest.mark.asyncio
 async def test_slack_send_message(mock_slack_client):
     """Test Slack send_message."""
-    with patch("app.core.chat_services.slack.client", mock_slack_client):
+    with patch("app.core.slack.client", mock_slack_client):
         slack_service = SlackService()
         
         # Test sending message with channel ID
@@ -444,7 +444,7 @@ async def test_slack_send_message(mock_slack_client):
 @pytest.mark.asyncio
 async def test_slack_send_message_error(mock_slack_client):
     """Test Slack send_message with errors."""
-    with patch("app.core.chat_services.slack.client", mock_slack_client):
+    with patch("app.core.slack.client", mock_slack_client):
         slack_service = SlackService()
         
         # Mock client is not initialized
@@ -472,7 +472,7 @@ async def test_slack_send_message_error(mock_slack_client):
 @pytest.mark.asyncio
 async def test_slack_process_command():
     """Test Slack process_command."""
-    with patch("app.core.chat_services.process_command") as mock_process, \
+    with patch("app.api.commands.process_command") as mock_process, \
          patch.object(SlackService, "format_message") as mock_format, \
          patch.object(SlackService, "send_message") as mock_send:
         slack_service = SlackService()
@@ -542,7 +542,7 @@ async def test_matrix_get_display_name():
 @pytest.mark.asyncio
 async def test_matrix_send_file(mock_matrix_client):
     """Test Matrix send_file."""
-    with patch("app.core.chat_services.matrix.client", mock_matrix_client), \
+    with patch("app.core.matrix.client", mock_matrix_client), \
          patch("app.core.chat_services.os.path.exists") as mock_exists, \
          patch("app.core.chat_services.os.path.getsize") as mock_getsize, \
          patch("app.core.chat_services.mimetypes.guess_type") as mock_guess_type:
@@ -577,7 +577,7 @@ async def test_matrix_send_file(mock_matrix_client):
 @pytest.mark.asyncio
 async def test_matrix_send_file_error(mock_matrix_client):
     """Test Matrix send_file with errors."""
-    with patch("app.core.chat_services.matrix.client", mock_matrix_client), \
+    with patch("app.core.matrix.client", mock_matrix_client), \
          patch("app.core.chat_services.os.path.exists") as mock_exists, \
          patch("app.core.chat_services.os.path.getsize") as mock_getsize:
         matrix_service = MatrixService()
@@ -643,7 +643,7 @@ async def test_matrix_send_file_error(mock_matrix_client):
 @pytest.mark.asyncio
 async def test_matrix_send_message(mock_matrix_client):
     """Test Matrix send_message."""
-    with patch("app.core.chat_services.matrix.client", mock_matrix_client):
+    with patch("app.core.matrix.client", mock_matrix_client):
         matrix_service = MatrixService()
         
         # Test sending message with room ID
@@ -667,7 +667,7 @@ async def test_matrix_send_message(mock_matrix_client):
 @pytest.mark.asyncio
 async def test_matrix_process_command():
     """Test Matrix process_command."""
-    with patch("app.core.chat_services.process_command") as mock_process, \
+    with patch("app.api.commands.process_command") as mock_process, \
          patch.object(MatrixService, "format_message") as mock_format, \
          patch.object(MatrixService, "send_message") as mock_send:
         matrix_service = MatrixService()
