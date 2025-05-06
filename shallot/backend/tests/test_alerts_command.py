@@ -36,7 +36,7 @@ async def test_alerts_command_no_connection():
         mock_client._connected = False
         
         # Test command
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify error message
         assert "Error: Not connected to Security Onion" in result
@@ -96,7 +96,7 @@ async def test_alerts_command_with_alerts(mock_so_client):
         mock_so_client._client.get.return_value = mock_response
         
         # Test command
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify response contains alert data
         assert "Here are the newest 5 alerts:" in result
@@ -137,7 +137,7 @@ async def test_alerts_command_no_alerts(mock_so_client):
         mock_so_client._client.get.return_value = mock_response
         
         # Test command
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify response
         assert "No alerts found in the last 24 hours" in result
@@ -152,7 +152,7 @@ async def test_alerts_command_api_error(mock_so_client):
         mock_so_client._client.get.side_effect = httpx.HTTPError("Connection failed")
         
         # Test command
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify error message
         assert "Error: Failed to connect to Security Onion API" in result
@@ -171,7 +171,7 @@ async def test_alerts_command_malformed_response(mock_so_client):
         mock_so_client._client.get.return_value = mock_response
         
         # Test command
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify error message
         assert "Error: Could not establish connection with Security Onion API" in result
@@ -204,7 +204,7 @@ async def test_alerts_command_invalid_alert_data(mock_so_client):
         mock_so_client._client.get.return_value = mock_response
         
         # Test command - should handle invalid data gracefully
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify response
         assert "No alerts found in the last 24 hours" in result
@@ -244,7 +244,7 @@ async def test_alerts_command_missing_alert_field(mock_so_client):
         mock_so_client._client.get.return_value = mock_response
         
         # Test command - should handle missing alert field gracefully
-        result = await process("!alerts", "discord", "user123", "testuser")
+        result = await process("!alerts", "user123", "discord", "testuser")
         
         # Verify response
         assert "No alerts found in the last 24 hours" in result

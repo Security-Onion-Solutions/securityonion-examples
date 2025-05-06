@@ -9,14 +9,19 @@ logger = logging.getLogger(__name__)
 
 
 async def get_chat_user_by_platform_id(
-    db: AsyncSession, platform_id: str, platform: ChatService
+    db: AsyncSession, platform_id: str, platform: str
 ) -> Optional[ChatUser]:
     """Get a chat user by their platform-specific ID."""
     logger.info(f"Looking up chat user with platform_id: {platform_id}, platform: {platform}")
     
+    # Handle both string and enum values for platform
+    platform_value = platform
+    if hasattr(platform, 'value'):
+        platform_value = platform.value
+    
     query = select(ChatUser).where(
         ChatUser.platform_id == str(platform_id),  # Ensure platform_id is a string
-        ChatUser.platform == platform.value  # Use enum value for platform
+        ChatUser.platform == platform_value  # Use enum value or string for platform
     )
     logger.debug(f"Executing query: {query}")
     
@@ -54,7 +59,7 @@ async def create_chat_user(
 
 
 async def is_command_allowed(
-    db: AsyncSession, platform_id: str, platform: ChatService, command: str
+    db: AsyncSession, platform_id: str, platform: str, command: str
 ) -> bool:
     """Check if a user is allowed to use a command."""
     # Get the user

@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     )
 
     # Database settings
-    DATABASE_URL: str = "sqlite+aiosqlite:////app/data/app.db"  # Default SQLite location in Docker volume
+    DATABASE_URL: str = "sqlite+aiosqlite:///./data/app.db"  # Relative path for development/testing
     DB_POOL_SIZE: int = 5
     DB_MAX_OVERFLOW: int = 10
     DB_POOL_TIMEOUT: int = 30

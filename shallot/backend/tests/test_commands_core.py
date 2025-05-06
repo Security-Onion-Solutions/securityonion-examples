@@ -66,7 +66,7 @@ def mock_command():
         description="Test command",
         usage="!test [arg]",
         examples=["!test", "!test arg"],
-        platforms=[PlatformType.DISCORD, PlatformType.SLACK],
+        platforms=["DISCORD", "SLACK"],
         permission=CommandPermission.BASIC
     )
 
@@ -201,7 +201,7 @@ async def test_validate_command_access_public(mock_command, mock_chat_user):
         mock_get_permission.return_value = CommandPermission.PUBLIC
         
         # No user_id provided
-        result = await validate_command_access(mock_command, PlatformType.DISCORD)
+        result = await validate_command_access(mock_command, "DISCORD")
         
         # Verify public command is accessible without user_id
         assert result is True
@@ -231,7 +231,7 @@ async def test_validate_command_access_with_user(mock_command, mock_chat_user):
         mock_has_permission.return_value = True
         
         # User has permissions
-        result = await validate_command_access(mock_command, PlatformType.DISCORD, "12345")
+        result = await validate_command_access(mock_command, "DISCORD", "12345")
         
         # Verify
         assert result is True
@@ -263,7 +263,7 @@ async def test_validate_command_access_insufficient_permissions(mock_command):
         mock_has_permission.return_value = False
         
         # Test with insufficient permissions
-        result = await validate_command_access(mock_command, PlatformType.DISCORD, "12345")
+        result = await validate_command_access(mock_command, "DISCORD", "12345")
         
         # Verify
         assert result is False
@@ -289,7 +289,7 @@ async def test_validate_command_access_user_not_found(mock_command):
         mock_get_user.return_value = None
         
         # Test with nonexistent user
-        result = await validate_command_access(mock_command, PlatformType.DISCORD, "nonexistent")
+        result = await validate_command_access(mock_command, "DISCORD", "nonexistent")
         
         # Verify
         assert result is False
@@ -353,7 +353,7 @@ async def test_list_commands_chat_user(mock_user, mock_chat_user):
         mock_has_permission.side_effect = has_permission_side_effect
         
         # Test the function with a BASIC role user
-        response = await list_commands(current_user=mock_user, platform=PlatformType.DISCORD)
+        response = await list_commands(current_user=mock_user, platform="DISCORD")
         
         # Verify only public and basic commands are returned
         assert len(response.commands) < len(AVAILABLE_COMMANDS)
@@ -374,7 +374,7 @@ async def test_test_command_valid(mock_user):
         # Test data
         request = CommandTestRequest(
             command="!help",
-            platform=PlatformType.DISCORD
+            platform="DISCORD"
         )
         
         # Test the function
@@ -386,7 +386,7 @@ async def test_test_command_valid(mock_user):
         assert response.success is True
         mock_process.assert_called_once_with(
             command="!help",
-            platform=PlatformType.DISCORD,
+            platform="DISCORD",
             user_id=mock_user.id if mock_user.user_type == UserType.CHAT else None,
             username=mock_user.username,
             user_type=mock_user.user_type.value
@@ -399,7 +399,7 @@ async def test_test_command_empty(mock_user):
     # Test data
     request = CommandTestRequest(
         command="",
-        platform=PlatformType.DISCORD
+        platform="DISCORD"
     )
     
     # Test the function raises exception
@@ -417,7 +417,7 @@ async def test_test_command_unknown(mock_user):
     # Test data
     request = CommandTestRequest(
         command="!unknown",
-        platform=PlatformType.DISCORD
+        platform="DISCORD"
     )
     
     # Test the function
@@ -434,12 +434,12 @@ async def test_test_command_invalid_platform(mock_user, mock_command):
     """Test test_command with command not available on platform."""
     with patch("app.api.commands.core.AVAILABLE_COMMANDS", [mock_command]):
         # Use a platform not supported by the command
-        mock_command.platforms = [PlatformType.SLACK]
+        mock_command.platforms = ["SLACK"]
         
         # Test data
         request = CommandTestRequest(
             command="!test",
-            platform=PlatformType.DISCORD
+            platform="DISCORD"
         )
         
         # Test the function
@@ -467,7 +467,7 @@ async def test_test_command_insufficient_permissions(mock_user, mock_chat_user, 
         mock_user.user_type = UserType.CHAT
         
         # Make command available on Discord
-        mock_command.platforms = [PlatformType.DISCORD]
+        mock_command.platforms = ["DISCORD"]
         
         # Mock getting the chat user
         mock_get_user.return_value = mock_chat_user
@@ -479,7 +479,7 @@ async def test_test_command_insufficient_permissions(mock_user, mock_chat_user, 
         # Test data
         request = CommandTestRequest(
             command="!test",
-            platform=PlatformType.DISCORD
+            platform="DISCORD"
         )
         
         # Test the function
