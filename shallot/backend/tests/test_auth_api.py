@@ -4,6 +4,7 @@ from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import timedelta
 
 from app.main import app
 from app.api.auth import (
@@ -406,3 +407,46 @@ def test_api_setup_required_endpoint():
         # Verify response
         assert response.status_code == 200
         assert response.json() == {"setup_required": True}
+
+
+@pytest.mark.asyncio
+async def test_api_refresh_token_endpoint(mock_user):
+    """Test refresh token endpoint integration."""
+    with patch("app.api.auth.get_current_user") as mock_get_current_user, \
+         patch("app.api.auth.create_access_token") as mock_create_token:
+        # Mock user retrieval
+        mock_get_current_user.return_value = mock_user
+        
+        # Mock token creation
+        mock_create_token.return_value = "refreshed_token"
+        
+        # Make the request
+        response = client.get("/api/auth/refresh")
+        
+        # Verify response
+        assert response.status_code == 200
+        assert response.json() == {"access_token": "refreshed_token", "token_type": "bearer"}
+        mock_create_token.assert_called_once_with(
+            subject=mock_user.username,
+            expires_delta=pytest.approx(timedelta(minutes=30), rel=1e-3),
+            is_superuser=mock_user.is_superuser
+        )
+
+
+@pytest.mark.asyncio
+async def test_api_refresh_token_endpoint_unauthorized():
+    """Test refresh token endpoint with unauthorized user."""
+    with patch("app.api.auth.get_current_user") as mock_get_current_user:
+        # Mock user retrieval to raise unauthorized exception
+        mock_get_current_user.side_effect = HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+        
+        # Make the request
+        response = client.get("/api/auth/refresh")
+        
+        # Verify response
+        assert response.status_code == 401
+        assert "Could not validate credentials" in response.json()["detail"]

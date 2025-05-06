@@ -31,9 +31,15 @@ jobs:
     
     - name: Run tests with coverage
       working-directory: ./shallot/backend
+      env:
+        FLASK_ENV: testing
+        SO_API_URL: https://mock-so-api
+        SO_CLIENT_ID: test_client_id
+        SO_CLIENT_SECRET: test_client_secret
+        SO_VERIFY_SSL: "false"
       run: |
         mkdir -p coverage/htmlcov
-        poetry run pytest -v --cov=src --cov-report=html:coverage/htmlcov --cov-report=term --cov-config=.coveragerc
+        poetry run pytest -v --cov=app --cov-report=html:coverage/htmlcov --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
@@ -61,9 +67,15 @@ jobs:
     
     - name: Run tests with coverage
       working-directory: ./vidalia
+      env:
+        FLASK_ENV: testing
+        SO_API_URL: https://mock-so-api
+        SO_CLIENT_ID: test_client_id
+        SO_CLIENT_SECRET: test_client_secret
+        SO_VERIFY_SSL: "false"
       run: |
         mkdir -p coverage/htmlcov
-        python -m pytest -v --cov=src --cov-report=html:coverage/htmlcov --cov-report=term --cov-config=.coveragerc
+        python -m pytest -v --cov=src --cov-report=html:coverage/htmlcov --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4

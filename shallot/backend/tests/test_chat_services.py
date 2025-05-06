@@ -256,6 +256,32 @@ async def test_discord_process_command_send_fails():
         assert result == "Failed to send response"
 
 
+@pytest.mark.asyncio
+async def test_discord_process_command_no_response():
+    """Test Discord process_command when no response is returned from command processing."""
+    with patch("app.core.chat_services.process_command") as mock_process, \
+         patch.object(DiscordService, "format_message") as mock_format, \
+         patch.object(DiscordService, "send_message") as mock_send:
+        discord_service = DiscordService()
+        
+        # Mock command processing with no response
+        mock_process.return_value = None
+        
+        # Test processing command
+        result = await discord_service.process_command(
+            "!test",
+            "user123",
+            username="testuser",
+            channel_id="channel123"
+        )
+        
+        # Verify no response was attempted to be sent
+        assert result is None
+        mock_process.assert_called_once()
+        mock_format.assert_not_called()
+        mock_send.assert_not_called()
+
+
 # Slack service tests
 
 @pytest.mark.asyncio

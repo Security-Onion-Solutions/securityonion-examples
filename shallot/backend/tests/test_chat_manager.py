@@ -217,3 +217,24 @@ async def test_error_handling(chat_manager):
     result = await chat_manager.send_message("DISCORD", "Test message")
     assert result is False
     discord_mock.send_message.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_chat_manager_service_exception():
+    """Test ChatServiceManager handling service initialization exceptions."""
+    with patch('app.core.chat_manager.get_chat_service') as mock_get_service:
+        # Configure the mock to raise an exception for one service
+        def get_service_side_effect(service):
+            if service == ChatService.DISCORD:
+                raise ValueError("Service initialization error")
+            return AsyncMock()
+                
+        mock_get_service.side_effect = get_service_side_effect
+        
+        # Create the manager - should handle the exception gracefully
+        manager = ChatServiceManager()
+        
+        # Verify that other services were still initialized
+        assert len(manager._services) > 0
+        # Discord service should be skipped due to the exception
+        assert ChatService.DISCORD.value not in manager._services

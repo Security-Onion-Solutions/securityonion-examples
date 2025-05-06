@@ -82,3 +82,29 @@ When the server is running, access:
 2. Follow the existing code style (enforced by black/flake8)
 3. Add tests for new functionality
 4. Update documentation as needed
+
+## Test Coverage
+
+### Verifying Coverage Improvements
+
+The project has recently migrated from using `--cov=src` to `--cov=app` for more accurate coverage reporting. This change focuses coverage analysis specifically on the application code rather than including test files or other non-application code.
+
+To verify coverage improvements:
+
+1. **GitHub Actions**: Push your changes to GitHub. The CI pipeline in `.github/workflows/python-test.yml` will automatically run tests with the new `--cov=app` configuration and enforce 100% coverage.
+
+2. **Local Verification**:
+   ```bash
+   # Run tests with the old configuration
+   poetry run pytest -v --cov=src --cov-report=term-missing
+   
+   # Run tests with the new configuration
+   poetry run pytest -v --cov=app --cov-report=term-missing
+   ```
+
+3. **Expected Improvements**:
+   - More accurate coverage reporting (focusing only on application code)
+   - Elimination of false positives from test files being included in coverage
+   - Better identification of truly uncovered code paths
+
+The new configuration ensures that only the actual application code in `src/app` is measured for coverage, providing a more meaningful metric of test quality.

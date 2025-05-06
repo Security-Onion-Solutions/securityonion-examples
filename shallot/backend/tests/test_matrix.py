@@ -267,7 +267,7 @@ async def test_matrix_client_handle_message(matrix_client):
         # Verify command processing
         mock_process.assert_called_once_with(
             "!test command",
-            "matrix",
+            "MATRIX",
             user_id="@user:matrix.org",
             username="Test User"
         )
@@ -366,3 +366,22 @@ async def test_matrix_client_close(matrix_client):
     assert matrix_client._status == "closed"
     mock_task.cancel.assert_called_once()
     matrix_client.client.close.assert_called_once()
+
+
+@pytest.mark.asyncio
+async def test_matrix_client_verify_sync_state_error():
+    """Test MatrixClient _verify_sync_state method with sync error."""
+    matrix_client = MatrixClient()
+    matrix_client.client = AsyncMock(spec=nio.AsyncClient)
+    matrix_client._enabled = True
+    matrix_client._status = "initialized"
+    
+    # Mock sync error
+    matrix_client.client.sync.return_value = nio.SyncError("Sync failed")
+    
+    # Test verify sync state
+    result = await matrix_client._verify_sync_state()
+    
+    # Verify result is False due to sync error
+    assert result is False
+    matrix_client.client.sync.assert_called_once()

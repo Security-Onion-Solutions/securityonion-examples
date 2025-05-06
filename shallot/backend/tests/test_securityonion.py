@@ -744,3 +744,142 @@ async def test_close(so_client, mock_httpx_client):
     
     # Verify client was closed
     mock_httpx_client.aclose.assert_called_once()
+@pytest.mark.asyncio
+async def test_initialize_exception_handling(so_client, mock_db):
+    """Test exception handling in the initialize method."""
+    with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
+         patch("app.core.securityonion.get_setting") as mock_get_setting:
+        # Mock session context manager
+        mock_session.return_value.__aenter__.return_value = mock_db
+        
+        # Mock get_setting to raise an exception
+        mock_get_setting.side_effect = Exception("Database connection error")
+        
+        # Initialize client
+        await so_client.initialize()
+        
+        # Verify error state
+        assert so_client._connected is False
+        assert "Initialization error: Database connection error" in so_client._last_error
+
+
+@pytest.mark.asyncio
+async def test_test_connection_health_endpoint_exception(so_client, mock_httpx_client):
+    """Test exception handling in the test_connection method when health endpoint fails."""
+    with patch.object(SecurityOnionClient, "_ensure_token") as mock_ensure_token:
+        # Set up client
+        so_client._client = mock_httpx_client
+        so_client._base_url = "https://securityonion.example.com/"
+        
+        # Mock successful token
+        mock_ensure_token.return_value = True
+        
+        # Mock health endpoint request raising an exception
+        mock_httpx_client.get.side_effect = httpx.RequestError("Connection refused")
+        
+        # Test connection
+        result = await so_client.test_connection()
+        
+        # Verify failure
+        assert result is False
+        assert so_client._connected is False
+        assert "Connection refused" in so_client._last_error
+
+
+@pytest.mark.asyncio
+async def test_get_event_exception_handling(so_client, mock_httpx_client):
+    """Test exception handling in the get_event method."""
+    with patch.object(SecurityOnionClient, "_ensure_token") as mock_ensure_token:
+        # Set up client
+        so_client._client = mock_httpx_client
+        so_client._access_token = "test_token"
+        
+        # Mock successful token
+        mock_ensure_token.return_value = True
+        
+        # Mock get request raising an exception
+        mock_httpx_client.get.side_effect = Exception("Network error")
+        
+        # Try to get event
+        event = await so_client.get_event("event1")
+        
+        # Verify failure
+        assert event is None
+        assert so_client._last_error == "Failed to get event: Network error"
+
+
+@pytest.mark.asyncio
+async def test_search_events_exception_handling(so_client, mock_httpx_client):
+    """Test exception handling in the search_events method."""
+    with patch.object(SecurityOnionClient, "_ensure_token") as mock_ensure_token:
+        # Set up client
+        so_client._client = mock_httpx_client
+        so_client._access_token = "test_token"
+        
+        # Mock successful token
+        mock_ensure_token.return_value = True
+        
+        # Mock search request raising an exception
+        mock_httpx_client.get.side_effect = Exception("API timeout")
+        
+        # Try to search events
+        events = await so_client.search_events("test query")
+        
+        # Verify failure
+        assert events == []
+        assert so_client._last_error == "Failed to search events: API timeout"
+
+
+def test_get_status_exception_handling(so_client):
+    """Test exception handling in the get_status method."""
+    # Set up client to trigger exception
+    so_client._connected = "not-a-boolean"  # Will cause bool() to be called on a non-boolean
+    
+    # Get status
+    status = so_client.get_status()
+    
+    # Verify error handling
+    assert status["connected"] is False
+    assert "Status error:" in status["error"]
+@pytest.mark.asyncio
+async def test_create_case_exception_handling(so_client, mock_httpx_client):
+    """Test exception handling in the create_case method."""
+    with patch.object(SecurityOnionClient, "_ensure_token") as mock_ensure_token:
+        # Set up client
+        so_client._client = mock_httpx_client
+        so_client._access_token = "test_token"
+        
+        # Mock successful token
+        mock_ensure_token.return_value = True
+        
+        # Mock post request raising an exception
+        mock_httpx_client.post.side_effect = Exception("Server error")
+        
+        # Try to create case
+        case_data = {"title": "Test Case", "status": "new"}
+        case = await so_client.create_case(case_data)
+        
+        # Verify failure
+        assert case is None
+        assert so_client._last_error == "Failed to create case: Server error"
+@pytest.mark.asyncio
+async def test_add_event_to_case_exception_handling(so_client, mock_httpx_client):
+    """Test exception handling in the add_event_to_case method."""
+    with patch.object(SecurityOnionClient, "_ensure_token") as mock_ensure_token:
+        # Set up client
+        so_client._client = mock_httpx_client
+        so_client._access_token = "test_token"
+        
+        # Mock successful token
+        mock_ensure_token.return_value = True
+        
+        # Mock post request raising an exception
+        mock_httpx_client.post.side_effect = Exception("Connection timeout")
+        
+        # Try to add event to case
+        event_fields = {"id": "event1", "type": "alert"}
+        result = await so_client.add_event_to_case("case1", event_fields)
+        
+        # Verify failure
+        assert result is False
+        assert so_client._last_error == "Failed to add event to case: Connection timeout"
