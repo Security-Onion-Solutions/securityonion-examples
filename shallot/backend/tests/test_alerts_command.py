@@ -19,12 +19,24 @@ def mock_so_client():
     client._client = AsyncMock(spec=httpx.AsyncClient)
     
     # Default to successful response
-    mock_response = AsyncMock()
-    mock_response.status_code = 200
-    mock_response.text = "{}"
-    mock_response.json.return_value = {"events": []}
-    client._client.get.return_value = mock_response
+    # mock_response = AsyncMock() # This was the issue for .json()
+    # mock_response.status_code = 200
+    # mock_response.text = "{}"
+    # mock_response.json = MagicMock(return_value={"events": []}) # Make .json() a MagicMock
+    # client._client.get.return_value = mock_response
     
+    # Simpler approach: directly mock the client's get().json() chain if that's what's consistently used
+    # However, the code uses response.text and response.status_code as well.
+    # So, the mock_response needs to be an AsyncMock for the overall response,
+    # but its .json attribute needs to be a synchronous MagicMock.
+
+    # Corrected setup for mock_response
+    mock_http_response = AsyncMock(spec=httpx.Response)
+    mock_http_response.status_code = 200
+    mock_http_response.text = "{}"
+    mock_http_response.json = MagicMock(return_value={"events": []}) # .json() is a sync method
+    client._client.get.return_value = mock_http_response # client.get() returns this mock response
+
     return client
 
 
@@ -101,11 +113,18 @@ async def test_alerts_command_with_alerts(mock_so_client):
             "totalEvents": 2
         }
         
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = json.dumps(alert_data)
-        mock_response.json.return_value = alert_data
-        mock_so_client._client.get.return_value = mock_response
+        # This block was already corrected by the previous partial apply,
+        # but ensure it remains as is or is equivalent to the intended change.
+        # The key is that mock_so_client._client.get.return_value
+        # should be an AsyncMock (for the response object itself)
+        # and its .json attribute should be a MagicMock (for the synchronous .json() method).
+
+        # Re-asserting the correct structure for this specific test:
+        mock_response_for_test = AsyncMock(spec=httpx.Response)
+        mock_response_for_test.status_code = 200
+        mock_response_for_test.text = json.dumps(alert_data)
+        mock_response_for_test.json = MagicMock(return_value=alert_data)
+        mock_so_client._client.get.return_value = mock_response_for_test
         
         # Test command
         result = await process("!alerts", "user123", "discord", "testuser")
@@ -148,11 +167,11 @@ async def test_alerts_command_no_alerts(mock_so_client):
         mock_get_user.return_value = mock_admin_user
 
         # Mock response with no alerts
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = '{"events": [], "totalEvents": 0}'
-        mock_response.json.return_value = {"events": [], "totalEvents": 0}
-        mock_so_client._client.get.return_value = mock_response
+        mock_response_for_test = AsyncMock(spec=httpx.Response)
+        mock_response_for_test.status_code = 200
+        mock_response_for_test.text = '{"events": [], "totalEvents": 0}'
+        mock_response_for_test.json = MagicMock(return_value={"events": [], "totalEvents": 0})
+        mock_so_client._client.get.return_value = mock_response_for_test
         
         # Test command
         result = await process("!alerts", "user123", "discord", "testuser")
@@ -194,11 +213,11 @@ async def test_alerts_command_malformed_response(mock_so_client):
         mock_get_user.return_value = mock_admin_user
 
         # Mock malformed response
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = "Not JSON"
-        mock_response.json.side_effect = json.JSONDecodeError("Invalid JSON", "Not JSON", 0)
-        mock_so_client._client.get.return_value = mock_response
+        mock_response_for_test = AsyncMock(spec=httpx.Response)
+        mock_response_for_test.status_code = 200
+        mock_response_for_test.text = "Not JSON"
+        mock_response_for_test.json = MagicMock(side_effect=json.JSONDecodeError("Invalid JSON", "Not JSON", 0))
+        mock_so_client._client.get.return_value = mock_response_for_test
         
         # Test command
         result = await process("!alerts", "user123", "discord", "testuser")
@@ -233,11 +252,11 @@ async def test_alerts_command_invalid_alert_data(mock_so_client):
             "totalEvents": 1
         }
         
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = json.dumps(alert_data)
-        mock_response.json.return_value = alert_data
-        mock_so_client._client.get.return_value = mock_response
+        mock_response_for_test = AsyncMock(spec=httpx.Response)
+        mock_response_for_test.status_code = 200
+        mock_response_for_test.text = json.dumps(alert_data)
+        mock_response_for_test.json = MagicMock(return_value=alert_data)
+        mock_so_client._client.get.return_value = mock_response_for_test
         
         # Test command - should handle invalid data gracefully
         result = await process("!alerts", "user123", "discord", "testuser")
@@ -279,11 +298,11 @@ async def test_alerts_command_missing_alert_field(mock_so_client):
             "totalEvents": 1
         }
         
-        mock_response = AsyncMock()
-        mock_response.status_code = 200
-        mock_response.text = json.dumps(alert_data)
-        mock_response.json.return_value = alert_data
-        mock_so_client._client.get.return_value = mock_response
+        mock_response_for_test = AsyncMock(spec=httpx.Response)
+        mock_response_for_test.status_code = 200
+        mock_response_for_test.text = json.dumps(alert_data)
+        mock_response_for_test.json = MagicMock(return_value=alert_data)
+        mock_so_client._client.get.return_value = mock_response_for_test
         
         # Test command - should handle missing alert field gracefully
         result = await process("!alerts", "user123", "discord", "testuser")
