@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# Copyright Security Onion Solutions LLC and/or licensed to Security Onion Solutions LLC under one
-# or more contributor license agreements. Licensed under the Elastic License 2.0 as shown at
-# https://securityonion.net/license; you may not use this file except in compliance with the
-# Elastic License 2.0.
-
 # Colors for output
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
@@ -21,11 +16,11 @@ check_docker() {
 }
 
 # Main script execution
-echo -e "${GREEN}Running Vidalia tests in Docker with coverage...${NC}"
+echo -e "${GREEN}Running Shallot Backend tests in Docker with coverage...${NC}"
 check_docker
 
 # Build the test container with 100% coverage requirement
-docker build -t vidalia-tests -f docker/Dockerfile.test \
+docker build -t shallot-backend-tests -f Dockerfile.test \
     --target test \
     --build-arg PYTHON_VERSION=3.13 \
     --build-arg COVERAGE_THRESHOLD=100 .
@@ -37,7 +32,7 @@ if [ $? -eq 0 ]; then
     mkdir -p coverage
     
     # Run tests and extract coverage data
-    CONTAINER_ID=$(docker create vidalia-tests)
+    CONTAINER_ID=$(docker create shallot-backend-tests)
     
     # Copy the coverage reports from the container
     docker cp $CONTAINER_ID:/app/coverage/htmlcov ./coverage/

@@ -1,6 +1,6 @@
 name: Python Test and Coverage
 
-# We enforce 100% coverage of executable code while excluding specific hard-to-test error handling paths
+# We enforce 100% code coverage using Docker with Python 3.13
 
 on:
   push:
@@ -11,69 +11,58 @@ on:
 jobs:
   shallot-backend-test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.13']
-    
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    # Run tests inside a Python 3.13 Docker container
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Test Shallot Backend with Python 3.13
+      uses: docker/build-push-action@v6
       with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Install Poetry
-      run: |
-        curl -sSL https://install.python-poetry.org | python3 -
-        echo "$HOME/.local/bin" >> $GITHUB_PATH
-    
-    - name: Install Shallot dependencies
-      working-directory: ./shallot/backend
-      run: poetry install
-    
-    - name: Run Shallot tests with coverage
-      working-directory: ./shallot/backend
-      run: |
-        poetry run pytest --cov=app --cov-report=html --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
+        context: ./shallot/backend
+        file: ./shallot/backend/Dockerfile.test
+        push: false
+        tags: shallot-backend-test:latest
+        target: test
+        outputs: type=local,dest=./shallot/backend/coverage
+        build-args: |
+          PYTHON_VERSION=3.13
+          COVERAGE_THRESHOLD=100
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: shallot-coverage-${{ matrix.python-version }}
-        path: ./shallot/backend/htmlcov/
+        name: shallot-coverage
+        path: ./shallot/backend/coverage/htmlcov/
         if-no-files-found: error
 
   vidalia-test:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ['3.13']
-    
     steps:
     - uses: actions/checkout@v4
     
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v5
+    # Run tests inside a Python 3.13 Docker container
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+    
+    - name: Test Vidalia with Python 3.13
+      uses: docker/build-push-action@v6
       with:
-        python-version: ${{ matrix.python-version }}
-    
-    - name: Install Vidalia dependencies
-      working-directory: ./vidalia
-      run: pip install -r requirements.txt pytest pytest-cov
-    
-    - name: Run Vidalia tests with coverage
-      working-directory: ./vidalia
-      run: |
-        # We use a .coveragerc file to exclude specific hard-to-test lines
-        # so we can maintain 100% coverage of testable code
-        python -m pytest --cov=src --cov-report=html --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
+        context: ./vidalia
+        file: ./vidalia/docker/Dockerfile.test
+        push: false
+        tags: vidalia-test:latest
+        target: test
+        outputs: type=local,dest=./vidalia/coverage
+        build-args: |
+          PYTHON_VERSION=3.13
+          COVERAGE_THRESHOLD=100
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
       with:
-        name: vidalia-coverage-${{ matrix.python-version }}
-        path: ./vidalia/htmlcov/
+        name: vidalia-coverage
+        path: ./vidalia/coverage/htmlcov/
         if-no-files-found: error

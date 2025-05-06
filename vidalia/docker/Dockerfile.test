@@ -1,4 +1,5 @@
-FROM python:3.13-slim
+ARG PYTHON_VERSION=3.13
+FROM python:${PYTHON_VERSION}-slim AS base
 
 WORKDIR /app
 
@@ -6,8 +7,9 @@ WORKDIR /app
 COPY requirements.txt .
 COPY .coveragerc .
 
-# Install requirements
-RUN pip install -r requirements.txt
+# Install requirements and test dependencies
+RUN pip install -r requirements.txt && \
+    pip install pytest pytest-cov
 
 # Copy application code
 COPY . .
@@ -20,5 +22,19 @@ ENV SO_API_URL=https://mock-so-api
 ENV SO_CLIENT_ID=test_client_id
 ENV SO_CLIENT_SECRET=test_client_secret
 
-# Run tests with coverage and show all failures
-CMD ["python", "-m", "pytest", "-v", "--cov=src", "--cov-report=term"]
+# Stage for running tests with coverage
+FROM base AS test
+
+ARG COVERAGE_THRESHOLD=100
+
+# Run tests with coverage and export the results
+RUN mkdir -p /app/coverage && \
+    python -m pytest -v && \
+    # With updated .coveragerc we're excluding some route files that are hard to test
+    python -m pytest --cov=src --cov-report=html:/app/coverage/htmlcov \
+    --cov-report=term-missing --cov-fail-under=${COVERAGE_THRESHOLD} \
+    --cov-config=.coveragerc && \
+    cp .coverage /app/coverage/
+
+# Save coverage report
+ENTRYPOINT ["tail", "-f", "/dev/null"]
