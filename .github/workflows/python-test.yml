@@ -1,7 +1,6 @@
 name: Python Test and Coverage
 
-# Note: Current coverage requirement is set to 95% rather than 100% 
-# while fixing failing tests. Future goal is to reach 100% coverage.
+# We enforce 100% coverage of executable code while excluding specific hard-to-test error handling paths
 
 on:
   push:
@@ -34,15 +33,10 @@ jobs:
       working-directory: ./shallot/backend
       run: poetry install
     
-    - name: Run Shallot tests
+    - name: Run Shallot tests with coverage
       working-directory: ./shallot/backend
       run: |
-        poetry run pytest || echo "Some tests failed, continuing with workflow"
-        
-    - name: Generate coverage report
-      working-directory: ./shallot/backend
-      run: |
-        poetry run pytest --cov=app --cov-report=html --cov-report=term-missing --cov-fail-under=95 --cov-config=.coveragerc || echo "Coverage below threshold, but continuing"
+        poetry run pytest --cov=app --cov-report=html --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
@@ -70,15 +64,12 @@ jobs:
       working-directory: ./vidalia
       run: pip install -r requirements.txt pytest pytest-cov
     
-    - name: Run Vidalia tests
+    - name: Run Vidalia tests with coverage
       working-directory: ./vidalia
       run: |
-        pytest || echo "Some tests failed, continuing with workflow"
-        
-    - name: Generate coverage report
-      working-directory: ./vidalia
-      run: |
-        pytest --cov=src --cov-report=html --cov-report=term-missing --cov-fail-under=95 --cov-config=.coveragerc || echo "Coverage below threshold, but continuing"
+        # We use a .coveragerc file to exclude specific hard-to-test lines
+        # so we can maintain 100% coverage of testable code
+        python -m pytest --cov=src --cov-report=html --cov-report=term-missing --cov-fail-under=100 --cov-config=.coveragerc
     
     - name: Upload coverage artifacts
       uses: actions/upload-artifact@v4
