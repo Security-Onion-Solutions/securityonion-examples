@@ -110,8 +110,12 @@ def test_fernet_initialization_error(mock_settings):
     """Test handling of invalid encryption key."""
     import importlib
     import sys
+    from .utils import VALID_TEST_KEY
     
-    # Set an invalid encryption key
+    # Save original key
+    original_key = settings.ENCRYPTION_KEY
+    
+    # Test with invalid key
     mock_settings.ENCRYPTION_KEY = "invalid_key"
     
     # Remove security module from sys.modules to force reload
@@ -122,5 +126,15 @@ def test_fernet_initialization_error(mock_settings):
     with pytest.raises(Exception):
         importlib.import_module('app.core.security')
     
+    # Test with valid key
+    mock_settings.ENCRYPTION_KEY = VALID_TEST_KEY
+    
+    # Remove security module from sys.modules to force reload
+    if 'app.core.security' in sys.modules:
+        del sys.modules['app.core.security']
+    
+    # This should not raise an exception
+    importlib.import_module('app.core.security')
+    
     # Reset the mock settings
-    mock_settings.ENCRYPTION_KEY = settings.ENCRYPTION_KEY
+    mock_settings.ENCRYPTION_KEY = original_key
