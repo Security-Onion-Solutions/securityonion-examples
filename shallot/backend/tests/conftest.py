@@ -14,7 +14,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../s
 
 # Set the encryption key environment variable before any imports
 os.environ['ENCRYPTION_KEY'] = VALID_TEST_KEY
-os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///:memory:'
+os.environ['DATABASE_URL'] = 'sqlite+aiosqlite:///file:memdb_test?mode=memory&cache=shared'
 
 # Import after setting environment variables
 from app.database import Base, get_db
@@ -22,7 +22,7 @@ from app.config import settings
 
 # Create test database engine
 test_engine = create_async_engine(
-    'sqlite+aiosqlite:///:memory:',
+    'sqlite+aiosqlite:///file:memdb_test?mode=memory&cache=shared',
     pool_pre_ping=True,
     echo=False,
 )
