@@ -10,9 +10,9 @@ services:
         NGINX_GID: ${GID:-1000}
     container_name: shallot-bot
     ports:
-      # Map host port (default 443) to container port 8443
-      # Use SHALLOT_PORT environment variable or default to 443
-      - "0.0.0.0:${SHALLOT_PORT:-443}:8443"
+      # Map host port to container port 8443
+      # Use SHALLOT_PORT environment variable or default to 9443 (non-privileged)
+      - "0.0.0.0:${SHALLOT_PORT:-9443}:8443"
     volumes:
       # Use relative paths for volumes based on compose file location
       # Assumes shallotbot directory structure exists relative to compose file

@@ -53,6 +53,11 @@ echo "$(date '+%Y-%m-%d %H:%M:%S') Container started" >> /app/logs/app/docker.lo
 # Update permissions
 update_permissions
 
+# Ensure nginx PID directory has proper ownership and permissions
+touch /app/logs/nginx/nginx.pid
+chown nginx:nginx /app/logs/nginx/nginx.pid
+chmod 644 /app/logs/nginx/nginx.pid
+
 # Start the Python backend with logging configuration
 echo "Starting FastAPI backend..." >> /app/logs/app/docker.log
 cd /app
@@ -65,6 +70,24 @@ while ! nc -z localhost 8000; do
 done
 echo "Backend is ready!" >> /app/logs/app/docker.log
 
-# Start nginx without daemon mode
-echo "$(date '+%Y-%m-%d %H:%M:%S') Starting nginx..." >> /app/logs/app/docker.log
-nginx -g 'daemon off;' >> /app/logs/app/docker.log 2>&1
+# Verify nginx configuration
+echo "$(date '+%Y-%m-%d %H:%M:%S') Checking nginx configuration..." >> /app/logs/app/docker.log
+nginx -t >> /app/logs/app/docker.log 2>&1
+
+# Check for existing/stale nginx process
+if [ -f /app/logs/nginx/nginx.pid ]; then
+    echo "PID file exists, checking if process is running..." >> /app/logs/app/docker.log
+    pid=$(cat /app/logs/nginx/nginx.pid)
+    if kill -0 $pid 2>/dev/null; then
+        echo "Stopping existing nginx process..." >> /app/logs/app/docker.log
+        kill $pid
+        sleep 2
+    else
+        echo "Stale PID file, removing..." >> /app/logs/app/docker.log
+    fi
+    rm -f /app/logs/nginx/nginx.pid
+fi
+
+# Start nginx with debug logging for troubleshooting
+echo "$(date '+%Y-%m-%d %H:%M:%S') Starting nginx with debug logging..." >> /app/logs/app/docker.log
+nginx -g 'daemon off; error_log /app/logs/nginx/error.log debug;' >> /app/logs/app/docker.log 2>&1

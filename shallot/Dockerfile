@@ -122,10 +122,11 @@ RUN groupadd -r -g ${NGINX_GID} nginx || groupmod -g ${NGINX_GID} nginx && \
     useradd -r -u ${NGINX_UID} -g nginx -s /sbin/nologin nginx || usermod -u ${NGINX_UID} -g ${NGINX_GID} nginx
 
 # Create necessary directories and set permissions
-RUN mkdir -p /etc/nginx/ssl /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/sites-enabled /var/lib/nginx/tmp && \
-    chown -R nginx:nginx /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/sites-enabled /var/lib/nginx && \
+RUN mkdir -p /etc/nginx/ssl /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/sites-enabled /var/lib/nginx/tmp /var/run/nginx && \
+    chown -R nginx:nginx /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/sites-enabled /var/lib/nginx /var/run/nginx && \
     chmod -R 755 /app/data /opt/shallot /var/log/nginx /var/cache/nginx /etc/nginx/ssl /etc/nginx/sites-enabled /var/lib/nginx && \
-    chmod 777 /var/lib/nginx/tmp # Ensure nginx can write here
+    chmod 777 /var/lib/nginx/tmp && \
+    chmod 755 /var/run/nginx # Ensure nginx can write here
 
 # Create symlink for .env file
 RUN ln -s /opt/shallot/.env /app/.env
