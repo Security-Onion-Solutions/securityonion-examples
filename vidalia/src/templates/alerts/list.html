@@ -11,13 +11,13 @@
         {% for alert in alerts %}
         <div class="alert-item">
             {% set message = alert.payload.message|from_json %}
-            {% set alert_data = message.alert %}
+            {% set alert_data = message.alert if message and 'alert' in message else {} %}
             <div class="alert-header">
-                <h3>{{ alert_data.signature }}</h3>
+                <h3>{{ alert_data.signature if alert_data else alert.payload['rule.name']|default('Unknown Alert') }}</h3>
                 <span class="severity {{ alert.payload['event.severity_label']|lower }}">
                     {{ alert.payload['event.severity_label'] }}
-                    {% if alert_data.metadata.signature_severity %}
-                    ({{ alert_data.metadata.signature_severity[0] }})
+                    {% if alert.payload['rule.metadata.signature_severity'] %}
+                    ({{ alert.payload['rule.metadata.signature_severity'][0] }})
                     {% endif %}
                 </span>
             </div>
@@ -28,8 +28,8 @@
                 </div>
                 
                 <div class="category">
-                    <strong>Category:</strong> {{ alert_data.category }}
-                    {% if alert_data.metadata.confidence %}
+                    <strong>Category:</strong> {{ alert_data.category if alert_data else alert.payload['rule.category']|default('Unknown') }}
+                    {% if alert_data and alert_data.metadata and alert_data.metadata.confidence %}
                     (Confidence: {{ alert_data.metadata.confidence[0] }})
                     {% endif %}
                 </div>
@@ -37,18 +37,18 @@
                 <div class="network-details">
                     <div class="source">
                         <strong>Source:</strong> 
-                        {{ message.src_ip }}:{{ message.src_port }}
+                        {{ message.src_ip if message else alert.payload['source.ip'] }}:{{ message.src_port if message else alert.payload['source.port'] }}
                     </div>
                     
                     <div class="destination">
                         <strong>Destination:</strong>
-                        {{ message.dest_ip }}:{{ message.dest_port }}
+                        {{ message.dest_ip if message else alert.payload['destination.ip'] }}:{{ message.dest_port if message else alert.payload['destination.port'] }}
                     </div>
                     
                     <div class="protocol">
-                        <strong>Protocol:</strong> {{ message.proto|default('UNKNOWN')|upper }}
-                        {% if message.pkt_src %}
-                        (Source: {{ message.pkt_src }})
+                        <strong>Protocol:</strong> {{ message.proto|default(alert.payload['network.transport']|default('UNKNOWN'))|upper }}
+                        {% if message.pkt_src or alert.payload['network.packet_source'] %}
+                        (Source: {{ message.pkt_src if message else alert.payload['network.packet_source'] }})
                         {% endif %}
                         <div class="sensor">
                             <strong>Sensor:</strong> {{ alert.payload['observer.name']|default('Unknown') }}

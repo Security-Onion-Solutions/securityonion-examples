@@ -75,33 +75,44 @@ def _create_job_data(alert: dict) -> dict:
     start_time = timestamp - timedelta(minutes=5)
     end_time = timestamp + timedelta(minutes=5)
     
-    # Get network info from message in payload
+    # Get network info from payload
     payload = alert.get('payload', {})
+    
+    # Try to get info from message JSON first, then fall back to direct payload fields
     try:
         message = json.loads(payload.get('message', '{}'))
         source_info = {
-            "ip": message.get('src_ip', ''),
-            "port": message.get('src_port', '')
+            "ip": message.get('src_ip', payload.get('source.ip', '')),
+            "port": message.get('src_port', payload.get('source.port', ''))
         }
         destination_info = {
-            "ip": message.get('dest_ip', ''),
-            "port": message.get('dest_port', '')
+            "ip": message.get('dest_ip', payload.get('destination.ip', '')),
+            "port": message.get('dest_port', payload.get('destination.port', ''))
         }
         network_info = {
-            "transport": message.get('proto', ''),
-            "packet_source": message.get('pkt_src', '')
+            "transport": message.get('proto', payload.get('network.transport', '')),
+            "packet_source": message.get('pkt_src', payload.get('network.packet_source', ''))
         }
     except (json.JSONDecodeError, TypeError):
-        current_app.logger.error("Failed to parse message JSON")
-        source_info = {"ip": "", "port": ""}
-        destination_info = {"ip": "", "port": ""}
-        network_info = {"transport": "", "packet_source": ""}
+        current_app.logger.error("Failed to parse message JSON, using direct payload fields")
+        source_info = {
+            "ip": payload.get('source.ip', ''),
+            "port": payload.get('source.port', '')
+        }
+        destination_info = {
+            "ip": payload.get('destination.ip', ''),
+            "port": payload.get('destination.port', '')
+        }
+        network_info = {
+            "transport": payload.get('network.transport', ''),
+            "packet_source": payload.get('network.packet_source', '')
+        }
     
     current_app.logger.debug(f"Source info: {json.dumps(source_info, indent=2)}")
     current_app.logger.debug(f"Destination info: {json.dumps(destination_info, indent=2)}")
     current_app.logger.debug(f"Network info: {json.dumps(network_info, indent=2)}")
     
-    # Get sensor information
+    # Get sensor information - try both nested and direct fields
     sensor_name = payload.get('observer.name', '')
         
     if not sensor_name:
