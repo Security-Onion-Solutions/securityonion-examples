@@ -5,16 +5,19 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from jose import jwt # Moved import to top level
 
 from ..core.security import (
     create_access_token,
     verify_password,
     ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM, # Import ALGORITHM as well
 )
 from ..database import get_db
 from ..models.users import User
 from ..schemas.users import Token, UserCreate
 from ..services.users import create_user, get_user_by_username
+from ..config import settings # Import settings as well
 
 router = APIRouter(tags=["auth"])
 
@@ -45,10 +48,6 @@ async def get_current_user(
 
     try:
         # Verify and decode JWT token
-        from jose import jwt
-        from ..core.security import ALGORITHM
-        from ..config import settings
-
         payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[ALGORITHM])
         username: str = payload.get("sub")
         if username is None:
