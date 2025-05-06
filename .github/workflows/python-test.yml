@@ -1,0 +1,75 @@
+name: Python Test and Coverage
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  shallot-backend-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+        echo "$HOME/.local/bin" >> $GITHUB_PATH
+    
+    - name: Install Shallot dependencies
+      working-directory: ./shallot/backend
+      run: poetry install
+    
+    - name: Run Shallot tests with coverage
+      working-directory: ./shallot/backend
+      run: |
+        poetry run pytest --cov=app --cov-report=html --cov-report=term-missing --cov-fail-under=100
+    
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: shallot-coverage-${{ matrix.python-version }}
+        path: ./shallot/backend/htmlcov/
+        if-no-files-found: error
+
+  vidalia-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.12', '3.13']
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install Vidalia dependencies
+      working-directory: ./vidalia
+      run: pip install -r requirements.txt pytest pytest-cov
+    
+    - name: Run Vidalia tests with coverage
+      working-directory: ./vidalia
+      run: |
+        pytest --cov=src --cov-report=html --cov-report=term-missing --cov-fail-under=100
+    
+    - name: Upload coverage artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: vidalia-coverage-${{ matrix.python-version }}
+        path: ./vidalia/htmlcov/
+        if-no-files-found: error
