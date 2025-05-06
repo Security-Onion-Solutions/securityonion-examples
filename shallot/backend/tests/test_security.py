@@ -110,7 +110,7 @@ def test_fernet_initialization_error(mock_settings):
     """Test handling of invalid encryption key."""
     import importlib
     import sys
-    from .utils import VALID_TEST_KEY
+    from tests.utils import VALID_TEST_KEY
     
     # Save original key
     original_key = settings.ENCRYPTION_KEY

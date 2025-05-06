@@ -1,7 +1,7 @@
 """Test fixtures for the backend."""
 import pytest
 from unittest.mock import patch
-from .utils import VALID_TEST_KEY
+from tests.utils import VALID_TEST_KEY
 
 
 @pytest.fixture(autouse=True)
