@@ -65,6 +65,20 @@ class SecurityOnionAPI(BaseSecurityOnionClient):
     def download_pcap(self, job_id: int) -> bytes:
         """Delegate to PcapService"""
         return self._pcap_service.download_pcap(job_id)
+        
+    def lookup_pcap_by_event(self, time: str, esid: Optional[str] = None, ncid: Optional[str] = None) -> bytes:
+        """
+        Directly download a PCAP for an event using time and either esid or ncid
+        
+        Args:
+            time: Event timestamp in ISO format
+            esid: Elasticsearch document ID (optional if ncid is provided)
+            ncid: Network community ID (optional if esid is provided)
+            
+        Returns:
+            PCAP file data as bytes
+        """
+        return self._pcap_service.lookup_pcap_by_event(time, esid, ncid)
 
     # Grid operations
     def get_grid_nodes(self) -> List[Dict[str, Any]]:

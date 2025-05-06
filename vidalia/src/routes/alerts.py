@@ -231,7 +231,7 @@ def check_pcap_status(alert_id, job_id):
 
 @bp.route('/alerts/<alert_id>/pcap/download/<int:job_id>')
 def download_pcap(alert_id, job_id):
-    """Download PCAP data for a completed job"""
+    """Download PCAP data for a completed job (legacy method)"""
     try:
         # Verify job is complete
         job = current_app.so_api.get_job_status(job_id)
@@ -262,4 +262,99 @@ def download_pcap(alert_id, job_id):
             
     except Exception as e:
         current_app.logger.error(f"Error downloading PCAP: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+        
+@bp.route('/alerts/<alert_id>/pcap/direct')
+def direct_pcap_download(alert_id):
+    """
+    Download PCAP directly using the joblookup endpoint.
+    This simplified method requires only one API call instead of three.
+    """
+    try:
+        # Get raw alert details
+        raw_alerts = current_app.so_api.get_alerts()
+        
+        # Find alert by _id or id
+        alert = next((a for a in raw_alerts if str(a.get('_id', a.get('id', ''))) == alert_id), None)
+        
+        if not alert:
+            return jsonify({"error": "Alert not found"}), 404
+            
+        # Log selected alert data
+        current_app.logger.debug("Selected alert data structure:")
+        current_app.logger.debug(json.dumps(alert, indent=2))
+        
+        # Extract required parameters
+        timestamp_str = alert.get('timestamp', '')
+        if not timestamp_str:
+            return jsonify({"error": "Alert missing timestamp"}), 400
+            
+        # Handle different timestamp formats
+        try:
+            if 'Z' in timestamp_str:
+                timestamp = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            else:
+                timestamp = datetime.fromisoformat(timestamp_str)
+            # Format time for the API
+            time_param = timestamp.strftime('%Y-%m-%dT%H:%M:%S.%fZ')
+        except ValueError as e:
+            current_app.logger.error(f"Failed to parse timestamp: {timestamp_str}")
+            return jsonify({"error": f"Invalid timestamp format: {timestamp_str}"}), 400
+        
+        # Try to get Elasticsearch ID or Community ID
+        payload = alert.get('payload', {})
+        
+        # Extract Elasticsearch document ID
+        esid = alert.get('_id', alert.get('id', None))
+        
+        # Try to get network community ID from payload
+        ncid = None
+        if 'network' in payload and 'community_id' in payload['network']:
+            ncid = payload['network']['community_id']
+        
+        # Alternatively try message field or direct field
+        if not ncid and 'message' in payload:
+            try:
+                message = json.loads(payload['message'])
+                if 'network' in message and 'community_id' in message['network']:
+                    ncid = message['network']['community_id']
+            except (json.JSONDecodeError, TypeError):
+                pass
+                
+        # Direct field access (flattened format)
+        if not ncid and 'network.community_id' in payload:
+            ncid = payload['network.community_id']
+            
+        if not esid and not ncid:
+            return jsonify({"error": "Alert missing required identifiers (esid or community_id)"}), 400
+            
+        current_app.logger.debug(f"Using direct PCAP lookup with time={time_param}, esid={esid}, ncid={ncid}")
+            
+        # Download PCAP directly
+        pcap_data = current_app.so_api.lookup_pcap_by_event(
+            time=time_param,
+            esid=esid,
+            ncid=ncid
+        )
+        
+        # Send file to user
+        timestamp_str = datetime.now().strftime('%Y%m%d-%H%M%S')
+        filename = f"alert_{alert_id}_{timestamp_str}.pcap"
+        current_app.logger.debug(f"Sending PCAP file: {filename}")
+        
+        return send_file(
+            BytesIO(pcap_data),
+            mimetype='application/octet-stream',
+            as_attachment=True,
+            download_name=filename
+        )
+            
+    except Exception as e:
+        current_app.logger.error(f"Error in direct PCAP download: {str(e)}")
+        current_app.logger.error(f"Traceback: {traceback.format_exc()}")
+        if isinstance(e, requests.exceptions.HTTPError):
+            response = e.response
+            current_app.logger.error(f"HTTP Error Status: {response.status_code}")
+            current_app.logger.error(f"Response Headers: {dict(response.headers)}")
+            current_app.logger.error(f"Response Content: {response.text}")
         return jsonify({"error": str(e)}), 500

@@ -5,11 +5,12 @@ This module handles PCAP-related operations including:
 - PCAP job creation
 - Job status monitoring
 - PCAP data download
+- Direct PCAP lookup via community ID or event ID
 """
 import json
 import logging
 import requests
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from .base import BaseSecurityOnionClient
 
 logger = logging.getLogger(__name__)
@@ -157,6 +158,73 @@ class PcapService:
             
         except requests.exceptions.RequestException as e:
             logger.error(f"Failed to download PCAP for job {job_id}: {str(e)}")
+            if hasattr(e, 'response') and e.response is not None:
+                logger.error(f"Error response content: {e.response.text}")
+            raise
+            
+    def lookup_pcap_by_event(self, time: str, esid: Optional[str] = None, ncid: Optional[str] = None) -> bytes:
+        """
+        Directly download a PCAP for an event using the joblookup endpoint.
+        
+        This simplifies the PCAP retrieval process by using a single API call
+        that accepts either an Elasticsearch document ID or a network community ID.
+        
+        Args:
+            time: Event timestamp in ISO format (e.g. "2024-01-29T12:31:59.220Z")
+            esid: Elasticsearch document ID (optional if ncid is provided)
+            ncid: Network community ID (optional if esid is provided)
+            
+        Returns:
+            PCAP file data as bytes
+            
+        Raises:
+            ValueError: If neither esid nor ncid is provided
+            requests.exceptions.RequestException: If the API request fails
+        """
+        if not esid and not ncid:
+            raise ValueError("Either esid or ncid parameter must be provided")
+            
+        self.api_client._ensure_authenticated()
+        
+        try:
+            # Build query parameters
+            params = {'time': time}
+            if esid:
+                params['esid'] = esid
+            if ncid:
+                params['ncid'] = ncid
+            
+            logger.debug(f"Using joblookup with parameters: {params}")
+            
+            response = self.api_client.session.get(
+                f"{self.api_client.base_url}/connect/joblookup",
+                headers=self.api_client._get_bearer_header(),
+                params=params,
+                timeout=30  # Longer timeout for PCAP retrieval
+            )
+            
+            logger.debug(f"PCAP joblookup response status: {response.status_code}")
+            logger.debug(f"PCAP joblookup response headers: {dict(response.headers)}")
+            
+            response.raise_for_status()
+            
+            # Check if we got data or an error response
+            content_type = response.headers.get('Content-Type', '')
+            
+            if 'application/json' in content_type:
+                # This might be an error response
+                try:
+                    error_data = response.json()
+                    logger.error(f"Received error from joblookup: {json.dumps(error_data, indent=2)}")
+                    raise requests.exceptions.HTTPError(f"API error: {error_data.get('error', 'Unknown error')}", response=response)
+                except json.JSONDecodeError:
+                    # Not JSON after all, continue with treating as binary
+                    pass
+                    
+            return response.content
+            
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Failed to lookup PCAP for event: {str(e)}")
             if hasattr(e, 'response') and e.response is not None:
                 logger.error(f"Error response content: {e.response.text}")
             raise

@@ -57,11 +57,24 @@
                 </div>
                 
                 <div class="alert-actions">
-                    <button onclick="downloadPcap('{{ alert.id }}')" 
-                            class="btn btn-primary download-pcap"
-                            id="download-btn-{{ alert.id }}">
-                        Download PCAP
-                    </button>
+                    <div class="dropdown">
+                        <button class="btn btn-primary dropdown-toggle" type="button" id="pcap-options-{{ alert.id }}" 
+                                onclick="toggleDropdown('{{ alert.id }}')">
+                            Download PCAP
+                        </button>
+                        <div id="dropdown-{{ alert.id }}" class="dropdown-menu">
+                            <button onclick="downloadPcap('{{ alert.id }}')" 
+                                    class="dropdown-item download-pcap"
+                                    id="download-btn-{{ alert.id }}">
+                                Standard Method
+                            </button>
+                            <button onclick="directDownloadPcap('{{ alert.id }}')" 
+                                    class="dropdown-item direct-download-pcap"
+                                    id="direct-download-btn-{{ alert.id }}">
+                                Fast Method
+                            </button>
+                        </div>
+                    </div>
                     <div id="download-status-{{ alert.id }}" class="download-status"></div>
                 </div>
             </div>
@@ -192,11 +205,106 @@
     background-color: #f8f9fa;
     border-radius: 4px;
 }
+
+/* Dropdown menu styles */
+.dropdown {
+    position: relative;
+    display: inline-block;
+}
+
+.dropdown-toggle {
+    position: relative;
+    padding-right: 2rem;
+}
+
+.dropdown-toggle::after {
+    content: '';
+    display: inline-block;
+    width: 0;
+    height: 0;
+    margin-left: 0.255em;
+    vertical-align: 0.255em;
+    border-top: 0.3em solid;
+    border-right: 0.3em solid transparent;
+    border-bottom: 0;
+    border-left: 0.3em solid transparent;
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    z-index: 1000;
+    display: none;
+    min-width: 10rem;
+    padding: 0.5rem 0;
+    margin: 0.125rem 0 0;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    border-radius: 0.25rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.175);
+}
+
+.dropdown-menu.show {
+    display: block;
+}
+
+.dropdown-item {
+    display: block;
+    width: 100%;
+    padding: 0.25rem 1.5rem;
+    clear: both;
+    text-align: inherit;
+    white-space: nowrap;
+    background-color: transparent;
+    border: 0;
+    cursor: pointer;
+}
+
+.dropdown-item:hover {
+    color: #16181b;
+    text-decoration: none;
+    background-color: #f8f9fa;
+}
 </style>
 {% endblock %}
 
 {% block scripts %}
 <script>
+// Toggle dropdown menu
+function toggleDropdown(alertId) {
+    const dropdown = document.getElementById(`dropdown-${alertId}`);
+    const allDropdowns = document.querySelectorAll('.dropdown-menu');
+    
+    // Close all open dropdowns
+    allDropdowns.forEach(menu => {
+        if (menu.id !== `dropdown-${alertId}` && menu.classList.contains('show')) {
+            menu.classList.remove('show');
+        }
+    });
+    
+    // Toggle current dropdown
+    dropdown.classList.toggle('show');
+}
+
+// Close dropdowns when clicking elsewhere
+document.addEventListener('click', function(event) {
+    const isDropdownToggle = event.target.classList.contains('dropdown-toggle');
+    
+    if (!isDropdownToggle) {
+        const allDropdowns = document.querySelectorAll('.dropdown-menu');
+        allDropdowns.forEach(menu => {
+            menu.classList.remove('show');
+        });
+    }
+});
+
+// Standard PCAP download method (3-step process)
 async function downloadPcap(alertId) {
     console.log(`Starting PCAP download for alert ${alertId}`);
     const button = document.getElementById(`download-btn-${alertId}`);
@@ -302,6 +410,74 @@ async function downloadPcap(alertId) {
         }
     } catch (error) {
         console.error('PCAP download error:', error);
+        status.textContent = `Error: ${error.message}`;
+        status.style.color = 'red';
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText;
+    }
+}
+
+// Direct PCAP download method (1-step process)
+async function directDownloadPcap(alertId) {
+    console.log(`Starting direct PCAP download for alert ${alertId}`);
+    const button = document.getElementById(`direct-download-btn-${alertId}`);
+    const status = document.getElementById(`download-status-${alertId}`);
+    const originalText = button.textContent;
+    
+    try {
+        console.log('Disabling button and updating status...');
+        button.disabled = true;
+        button.textContent = 'Downloading...';
+        status.textContent = 'Requesting PCAP data...';
+        status.style.color = 'initial';
+        
+        // Download PCAP file directly
+        console.log('Requesting PCAP file...');
+        const response = await fetch(`/alerts/${alertId}/pcap/direct`);
+        
+        if (response.ok) {
+            console.log('Request successful, checking content type...');
+            // Check if it's JSON (error) or blob (file)
+            const contentType = response.headers.get('content-type');
+            console.log(`Content-Type: ${contentType}`);
+            
+            if (contentType && contentType.includes('application/json')) {
+                console.log('Received JSON response (error)');
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to download PCAP');
+            }
+            
+            console.log('Received PCAP data, preparing download...');
+            
+            // Handle successful file download
+            const blob = await response.blob();
+            console.log('Created blob from response');
+            
+            const url = window.URL.createObjectURL(blob);
+            console.log('Created object URL for blob');
+            
+            const a = document.createElement('a');
+            const filename = response.headers.get('content-disposition')?.split('filename=')[1] || 'alert.pcap';
+            console.log(`Using filename: ${filename}`);
+            
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            
+            console.log('Triggered download');
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            status.textContent = 'Download complete!';
+            status.style.color = 'green';
+        } else {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to download PCAP');
+        }
+    } catch (error) {
+        console.error('Direct PCAP download error:', error);
         status.textContent = `Error: ${error.message}`;
         status.style.color = 'red';
     } finally {
