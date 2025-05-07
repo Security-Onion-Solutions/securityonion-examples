@@ -57,14 +57,14 @@ def so_client():
 
 
 @pytest.mark.asyncio
-async def test_initialize_success(so_client, mock_db, mock_so_settings, mock_httpx_client):
+async def test_initialize_success(so_client, db, mock_so_settings, mock_httpx_client):
     """Test successful client initialization."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting, \
          patch("app.core.securityonion.httpx.AsyncClient") as mock_client_class, \
          patch.object(SecurityOnionClient, "test_connection") as mock_test:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock settings retrieval
         mock_get_setting.return_value = mock_so_settings
@@ -97,12 +97,12 @@ async def test_initialize_success(so_client, mock_db, mock_so_settings, mock_htt
 
 
 @pytest.mark.asyncio
-async def test_initialize_missing_settings(so_client, mock_db):
+async def test_initialize_missing_settings(so_client, db):
     """Test initialization with missing settings."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock missing settings
         mock_get_setting.return_value = None
@@ -116,12 +116,12 @@ async def test_initialize_missing_settings(so_client, mock_db):
 
 
 @pytest.mark.asyncio
-async def test_initialize_invalid_settings(so_client, mock_db):
+async def test_initialize_invalid_settings(so_client, db):
     """Test initialization with invalid settings JSON."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock invalid settings JSON
         settings = MagicMock()
@@ -137,12 +137,12 @@ async def test_initialize_invalid_settings(so_client, mock_db):
 
 
 @pytest.mark.asyncio
-async def test_initialize_missing_required_fields(so_client, mock_db):
+async def test_initialize_missing_required_fields(so_client, db):
     """Test initialization with missing required settings fields."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock settings with missing fields
         settings = MagicMock()
@@ -163,14 +163,14 @@ async def test_initialize_missing_required_fields(so_client, mock_db):
 
 
 @pytest.mark.asyncio
-async def test_initialize_url_formatting(so_client, mock_db, mock_httpx_client):
+async def test_initialize_url_formatting(so_client, db, mock_httpx_client):
     """Test URL formatting during initialization."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting, \
          patch("app.core.securityonion.httpx.AsyncClient") as mock_client_class, \
          patch.object(SecurityOnionClient, "test_connection") as mock_test:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock client creation
         mock_client_class.return_value = mock_httpx_client
@@ -752,12 +752,12 @@ async def test_close(so_client, mock_httpx_client):
     # Verify client was closed
     mock_httpx_client.aclose.assert_called_once()
 @pytest.mark.asyncio
-async def test_initialize_exception_handling(so_client, mock_db):
+async def test_initialize_exception_handling(so_client, db):
     """Test exception handling in the initialize method."""
     with patch("app.core.securityonion.AsyncSessionLocal") as mock_session, \
          patch("app.core.securityonion.get_setting") as mock_get_setting:
         # Mock session context manager
-        mock_session.return_value.__aenter__.return_value = mock_db
+        mock_session.return_value.__aenter__.return_value = db
         
         # Mock get_setting to raise an exception
         mock_get_setting.side_effect = Exception("Database connection error")

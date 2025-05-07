@@ -62,7 +62,7 @@ def mock_superuser():
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_valid(mock_db, mock_user):
+async def test_get_current_user_valid(db, mock_user):
     """Test get_current_user with valid token."""
     with patch("app.api.auth.jwt.decode") as mock_decode, \
          patch("app.api.auth.get_user_by_username") as mock_get_user:
@@ -73,15 +73,15 @@ async def test_get_current_user_valid(mock_db, mock_user):
         mock_get_user.return_value = mock_user
         
         # Test the function
-        user = await get_current_user("valid_token", mock_db)
+        user = await get_current_user("valid_token", db)
         
         # Verify returned user
         assert user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, "testuser")
+        mock_get_user.assert_called_once_with(db, "testuser")
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_invalid_token(mock_db):
+async def test_get_current_user_invalid_token(db):
     """Test get_current_user with invalid token."""
     with patch("app.api.auth.jwt.decode") as mock_decode:
         # Mock token decoding to raise exception
@@ -89,7 +89,7 @@ async def test_get_current_user_invalid_token(mock_db):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user("invalid_token", mock_db)
+            await get_current_user("invalid_token", db)
         
         # Verify exception details
         assert exc_info.value.status_code == 401
@@ -97,7 +97,7 @@ async def test_get_current_user_invalid_token(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_missing_sub(mock_db):
+async def test_get_current_user_missing_sub(db):
     """Test get_current_user with token missing subject."""
     with patch("app.api.auth.jwt.decode") as mock_decode:
         # Mock token decoding with missing 'sub' field
@@ -105,7 +105,7 @@ async def test_get_current_user_missing_sub(mock_db):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user("invalid_token", mock_db)
+            await get_current_user("invalid_token", db)
         
         # Verify exception details
         assert exc_info.value.status_code == 401
@@ -113,7 +113,7 @@ async def test_get_current_user_missing_sub(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_get_current_user_nonexistent(mock_db):
+async def test_get_current_user_nonexistent(db):
     """Test get_current_user with nonexistent user."""
     with patch("app.api.auth.jwt.decode") as mock_decode, \
          patch("app.api.auth.get_user_by_username") as mock_get_user:
@@ -125,7 +125,7 @@ async def test_get_current_user_nonexistent(mock_db):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await get_current_user("valid_token", mock_db)
+            await get_current_user("valid_token", db)
         
         # Verify exception details
         assert exc_info.value.status_code == 401
@@ -177,7 +177,7 @@ async def test_get_current_active_superuser_not_admin(mock_user):
 
 
 @pytest.mark.asyncio
-async def test_login_for_access_token(mock_db, mock_user):
+async def test_login_for_access_token(db, mock_user):
     """Test login_for_access_token with valid credentials."""
     with patch("app.api.auth.get_user_by_username") as mock_get_user, \
          patch("app.api.auth.verify_password") as mock_verify, \
@@ -197,17 +197,17 @@ async def test_login_for_access_token(mock_db, mock_user):
         mock_create_token.return_value = "test_token"
         
         # Test the function
-        token = await login_for_access_token(form_data, mock_db)
+        token = await login_for_access_token(form_data, db)
         
         # Verify response
         assert token == {"access_token": "test_token", "token_type": "bearer"}
-        mock_get_user.assert_called_once_with(mock_db, "testuser")
+        mock_get_user.assert_called_once_with(db, "testuser")
         mock_verify.assert_called_once_with("password", mock_user.hashed_password)
         mock_create_token.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_login_for_access_token_invalid_user(mock_db):
+async def test_login_for_access_token_invalid_user(db):
     """Test login_for_access_token with nonexistent user."""
     with patch("app.api.auth.get_user_by_username") as mock_get_user:
         # Mock form data
@@ -220,7 +220,7 @@ async def test_login_for_access_token_invalid_user(mock_db):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await login_for_access_token(form_data, mock_db)
+            await login_for_access_token(form_data, db)
         
         # Verify exception details
         assert exc_info.value.status_code == 401
@@ -228,7 +228,7 @@ async def test_login_for_access_token_invalid_user(mock_db):
 
 
 @pytest.mark.asyncio
-async def test_login_for_access_token_wrong_password(mock_db, mock_user):
+async def test_login_for_access_token_wrong_password(db, mock_user):
     """Test login_for_access_token with wrong password."""
     with patch("app.api.auth.get_user_by_username") as mock_get_user, \
          patch("app.api.auth.verify_password") as mock_verify:
@@ -245,7 +245,7 @@ async def test_login_for_access_token_wrong_password(mock_db, mock_user):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await login_for_access_token(form_data, mock_db)
+            await login_for_access_token(form_data, db)
         
         # Verify exception details
         assert exc_info.value.status_code == 401
@@ -272,7 +272,7 @@ async def test_refresh_token(mock_user):
 
 
 @pytest.mark.asyncio
-async def test_check_setup_required_empty(mock_db):
+async def test_check_setup_required_empty(db):
     """Test check_setup_required when no users exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (no users)
@@ -285,24 +285,24 @@ async def test_check_setup_required_empty(mock_db):
 
 
         mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        mock_db.execute.return_value = mock_result
+        db.execute.return_value = mock_result
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
         
         # Test the function
-        result = await check_setup_required(mock_db)
+        result = await check_setup_required(db)
         
         # Verify result indicates setup is required
         assert result == {"setup_required": True}
 
 
 @pytest.mark.asyncio
-async def test_check_setup_required_with_users(mock_db, mock_user):
+async def test_check_setup_required_with_users(db, mock_user):
     """Test check_setup_required when users exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (with user)
@@ -315,24 +315,24 @@ async def test_check_setup_required_with_users(mock_db, mock_user):
 
 
         mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        mock_db.execute.return_value = mock_result
+        db.execute.return_value = mock_result
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
         
         # Test the function
-        result = await check_setup_required(mock_db)
+        result = await check_setup_required(db)
         
         # Verify result indicates setup is not required
         assert result == {"setup_required": False}
 
 
 @pytest.mark.asyncio
-async def test_initial_setup_first_user(mock_db):
+async def test_initial_setup_first_user(db):
     """Test initial_setup when no users exist."""
     with patch("app.api.auth.select") as mock_select, \
          patch("app.api.auth.create_user") as mock_create_user, \
@@ -347,14 +347,14 @@ async def test_initial_setup_first_user(mock_db):
 
 
         mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        mock_db.execute.return_value = mock_result
+        db.execute.return_value = mock_result
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
         
         # Mock user creation
         new_user = MagicMock(spec=User)
@@ -374,18 +374,18 @@ async def test_initial_setup_first_user(mock_db):
         )
         
         # Test the function
-        result = await initial_setup(user_in, mock_db)
+        result = await initial_setup(user_in, db)
         
         # Verify result contains token
         assert result == {"access_token": "admin_token", "token_type": "bearer"}
         
         # Verify user was created as superuser
         assert user_in.is_superuser is True
-        mock_create_user.assert_called_once_with(mock_db, user_in)
+        mock_create_user.assert_called_once_with(db, user_in)
 
 
 @pytest.mark.asyncio
-async def test_initial_setup_users_exist(mock_db, mock_user):
+async def test_initial_setup_users_exist(db, mock_user):
     """Test initial_setup when users already exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (with user)
@@ -398,14 +398,14 @@ async def test_initial_setup_users_exist(mock_db, mock_user):
 
 
         mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        mock_db.execute.return_value = mock_result
+        db.execute.return_value = mock_result
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
         
         # Create user data
         user_in = UserCreate(
@@ -416,7 +416,7 @@ async def test_initial_setup_users_exist(mock_db, mock_user):
         
         # Test the function raises expected exception
         with pytest.raises(HTTPException) as exc_info:
-            await initial_setup(user_in, mock_db)
+            await initial_setup(user_in, db)
         
         # Verify exception details
         assert exc_info.value.status_code == 400
@@ -456,8 +456,8 @@ def test_api_setup_required_endpoint():
     """Test setup_required endpoint integration."""
     with patch("app.database.get_db", new_callable=AsyncMock) as mock_get_db:
         # Mock DB session
-        mock_db = MagicMock()
-        mock_get_db.return_value.__aenter__.return_value = mock_db
+        db = MagicMock()
+        mock_get_db.return_value.__aenter__.return_value = db
         
         # Mock DB query result (no users)
         mock_result = MagicMock()
@@ -469,14 +469,14 @@ def test_api_setup_required_endpoint():
 
 
         mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        mock_db.execute.return_value = mock_result
+        db.execute.return_value = mock_result
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
 
 
-        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+        db.execute.return_value = await_mock(db.execute.return_value)
         
         # Make the request
         response = client.get("/api/auth/setup-required")

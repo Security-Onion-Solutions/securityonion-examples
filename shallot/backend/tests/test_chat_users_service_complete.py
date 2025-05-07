@@ -18,7 +18,7 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async def test_get_chat_user_by_platform_id(db: AsyncSession):
+async def test_get_chat_user_by_platform_id(db):
     """Test getting a chat user by platform ID."""
     # Create a test user directly in the database
     test_user = ChatUser(
@@ -58,7 +58,7 @@ async def test_get_chat_user_by_platform_id(db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_create_chat_user(db: AsyncSession):
+async def test_create_chat_user(db):
     """Test creating a chat user."""
     # Create a new user
     new_user = await create_chat_user(

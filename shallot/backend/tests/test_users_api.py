@@ -72,7 +72,7 @@ def mock_superuser():
 # Service tests
 
 @pytest.mark.asyncio
-async def test_get_user_count(mock_db):
+async def test_get_user_count(db):
     """Test get_user_count service function."""
     # Mock DB query result
     mock_result = MagicMock()
@@ -81,22 +81,22 @@ async def test_get_user_count(mock_db):
     mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
     make_mock_awaitable(mock_result, "scalar_one")
     
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
 
     
-    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
-    make_mock_awaitable(mock_db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
+    make_mock_awaitable(db, "execute")
     
     # Test function
-    count = await get_user_count(mock_db)
+    count = await get_user_count(db)
     
     # Verify
     assert count == 5
-    mock_db.execute.assert_called_once()
+    db.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_username(mock_db, mock_user):
+async def test_get_user_by_username(db, mock_user):
     """Test get_user_by_username service function."""
     # Mock DB query result
     mock_result = MagicMock()
@@ -105,22 +105,22 @@ async def test_get_user_by_username(mock_db, mock_user):
     mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
 
     
-    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
-    make_mock_awaitable(mock_db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
+    make_mock_awaitable(db, "execute")
     
     # Test function
-    user = await get_user_by_username(mock_db, "testuser")
+    user = await get_user_by_username(db, "testuser")
     
     # Verify
     assert user == mock_user
-    mock_db.execute.assert_called_once()
+    db.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_username_not_found(mock_db):
+async def test_get_user_by_username_not_found(db):
     """Test get_user_by_username with nonexistent user."""
     # Mock DB query result
     mock_result = MagicMock()
@@ -129,52 +129,52 @@ async def test_get_user_by_username_not_found(mock_db):
     mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
 
     
-    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
-    make_mock_awaitable(mock_db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
+    make_mock_awaitable(db, "execute")
     
     # Test function
-    user = await get_user_by_username(mock_db, "nonexistent")
+    user = await get_user_by_username(db, "nonexistent")
     
     # Verify
     assert user is None
-    mock_db.execute.assert_called_once()
+    db.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id(mock_db, mock_user):
+async def test_get_user_by_id(db, mock_user):
     """Test get_user_by_id service function."""
     # Mock DB get
-    mock_db.get.return_value = mock_user
-    make_mock_awaitable(mock_db, "get")
+    db.get.return_value = mock_user
+    make_mock_awaitable(db, "get")
     
     # Test function
-    user = await get_user_by_id(mock_db, 1)
+    user = await get_user_by_id(db, 1)
     
     # Verify
     assert user == mock_user
-    mock_db.get.assert_called_once_with(User, 1)
+    db.get.assert_called_once_with(User, 1)
 
 
 @pytest.mark.asyncio
-async def test_get_user_by_id_not_found(mock_db):
+async def test_get_user_by_id_not_found(db):
     """Test get_user_by_id with nonexistent user."""
     # Mock DB get
-    mock_db.get.return_value = None
-    make_mock_awaitable(mock_db, "get")
+    db.get.return_value = None
+    make_mock_awaitable(db, "get")
     
     # Test function
-    user = await get_user_by_id(mock_db, 999)
+    user = await get_user_by_id(db, 999)
     
     # Verify
     assert user is None
-    mock_db.get.assert_called_once_with(User, 999)
+    db.get.assert_called_once_with(User, 999)
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_success(mock_db, mock_user):
+async def test_authenticate_user_success(db, mock_user):
     """Test authenticate_user with valid credentials."""
     with patch("app.services.users.get_user_by_username") as mock_get_user, \
          patch("app.services.users.verify_password") as mock_verify:
@@ -185,16 +185,16 @@ async def test_authenticate_user_success(mock_db, mock_user):
         mock_verify.return_value = True
         
         # Test function
-        user = await authenticate_user(mock_db, "testuser", "password")
+        user = await authenticate_user(db, "testuser", "password")
         
         # Verify
         assert user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, "testuser")
+        mock_get_user.assert_called_once_with(db, "testuser")
         mock_verify.assert_called_once_with("password", mock_user.hashed_password)
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_wrong_password(mock_db, mock_user):
+async def test_authenticate_user_wrong_password(db, mock_user):
     """Test authenticate_user with wrong password."""
     with patch("app.services.users.get_user_by_username") as mock_get_user, \
          patch("app.services.users.verify_password") as mock_verify:
@@ -205,35 +205,35 @@ async def test_authenticate_user_wrong_password(mock_db, mock_user):
         mock_verify.return_value = False
         
         # Test function
-        user = await authenticate_user(mock_db, "testuser", "wrongpassword")
+        user = await authenticate_user(db, "testuser", "wrongpassword")
         
         # Verify
         assert user is None
-        mock_get_user.assert_called_once_with(mock_db, "testuser")
+        mock_get_user.assert_called_once_with(db, "testuser")
         mock_verify.assert_called_once_with("wrongpassword", mock_user.hashed_password)
 
 
 @pytest.mark.asyncio
-async def test_authenticate_user_nonexistent(mock_db):
+async def test_authenticate_user_nonexistent(db):
     """Test authenticate_user with nonexistent user."""
     with patch("app.services.users.get_user_by_username") as mock_get_user:
         # Mock user retrieval
         mock_get_user.return_value = None
         
         # Test function
-        user = await authenticate_user(mock_db, "nonexistent", "password")
+        user = await authenticate_user(db, "nonexistent", "password")
         
         # Verify
         assert user is None
-        mock_get_user.assert_called_once_with(mock_db, "nonexistent")
+        mock_get_user.assert_called_once_with(db, "nonexistent")
 
 
 @pytest.mark.asyncio
-async def test_create_user(mock_db):
+async def test_create_user(db):
     """Test create_user service function."""
     # Mock DB operations
-    mock_db.commit = AsyncMock()
-    mock_db.refresh = AsyncMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
     
     # Test data
     user_in = UserCreate(
@@ -249,7 +249,7 @@ async def test_create_user(mock_db):
     with patch("app.services.users.get_password_hash") as mock_get_hash:
         mock_get_hash.return_value = "hashed_password"
         
-        user = await create_user(mock_db, user_in)
+        user = await create_user(db, user_in)
         
         # Verify user creation
         assert user.username == "newuser"
@@ -260,13 +260,13 @@ async def test_create_user(mock_db):
         assert user.user_type == UserType.WEB
         
         # Verify DB operations
-        mock_db.add.assert_called_once()
-        mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_called_once()
+        db.add.assert_called_once()
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_create_user_api(mock_db, mock_superuser):
+async def test_create_user_api(db, mock_superuser):
     """Test create_new_user API endpoint."""
     with patch("app.api.users.create_user") as mock_create, \
          patch("app.api.users.get_user_by_username") as mock_get_user:
@@ -289,16 +289,16 @@ async def test_create_user_api(mock_db, mock_superuser):
         )
         
         # Test function
-        user = await create_new_user(user_in, mock_db, mock_superuser)
+        user = await create_new_user(user_in, db, mock_superuser)
         
         # Verify
         assert user == new_user
-        mock_get_user.assert_called_once_with(mock_db, "newuser")
-        mock_create.assert_called_once_with(mock_db, user_in)
+        mock_get_user.assert_called_once_with(db, "newuser")
+        mock_create.assert_called_once_with(db, user_in)
 
 
 @pytest.mark.asyncio
-async def test_create_user_username_exists(mock_db, mock_superuser, mock_user):
+async def test_create_user_username_exists(db, mock_superuser, mock_user):
     """Test create_new_user with existing username."""
     with patch("app.api.users.get_user_by_username") as mock_get_user:
         # Mock username check (user exists)
@@ -316,7 +316,7 @@ async def test_create_user_username_exists(mock_db, mock_superuser, mock_user):
         
         # Test function
         with pytest.raises(HTTPException) as exc_info:
-            await create_new_user(user_in, mock_db, mock_superuser)
+            await create_new_user(user_in, db, mock_superuser)
         
         # Verify exception details
         assert exc_info.value.status_code == 400
@@ -324,7 +324,7 @@ async def test_create_user_username_exists(mock_db, mock_superuser, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_read_users(mock_db, mock_superuser):
+async def test_read_users(db, mock_superuser):
     """Test read_users API endpoint."""
     # Mock DB query result
     mock_result = MagicMock()
@@ -333,23 +333,23 @@ async def test_read_users(mock_db, mock_superuser):
     mock_result.scalars.return_value = mock_scalars
     make_mock_awaitable(mock_result, "scalars")
     
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
 
     
-    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
-    make_mock_awaitable(mock_db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
+    make_mock_awaitable(db, "execute")
     
     # Test function
-    users = await read_users(mock_db, mock_superuser)
+    users = await read_users(db, mock_superuser)
     
     # Verify
     assert len(users) == 1
     assert users[0] == mock_superuser
-    mock_db.execute.assert_called_once()
+    db.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_read_users_with_filter(mock_db, mock_superuser):
+async def test_read_users_with_filter(db, mock_superuser):
     """Test read_users with user_type filter."""
     # Mock DB query result
     mock_result = MagicMock()
@@ -358,53 +358,53 @@ async def test_read_users_with_filter(mock_db, mock_superuser):
     mock_result.scalars.return_value = mock_scalars
     make_mock_awaitable(mock_result, "scalars")
     
-    mock_db.execute.return_value = mock_result
+    db.execute.return_value = mock_result
 
     
-    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
-    make_mock_awaitable(mock_db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
+    make_mock_awaitable(db, "execute")
     
     # Test function
-    users = await read_users(mock_db, mock_superuser, user_type=UserType.WEB)
+    users = await read_users(db, mock_superuser, user_type=UserType.WEB)
     
     # Verify
     assert len(users) == 1
     assert users[0] == mock_superuser
-    mock_db.execute.assert_called_once()
+    db.execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_read_user_by_id(mock_db, mock_user):
+async def test_read_user_by_id(db, mock_user):
     """Test read_user API endpoint (user reading own data)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval
         mock_get_user.return_value = mock_user
         
         # Test function
-        user = await read_user(1, mock_db, mock_user)
+        user = await read_user(1, db, mock_user)
         
         # Verify
         assert user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, 1)
+        mock_get_user.assert_called_once_with(db, 1)
 
 
 @pytest.mark.asyncio
-async def test_read_user_by_id_as_admin(mock_db, mock_superuser, mock_user):
+async def test_read_user_by_id_as_admin(db, mock_superuser, mock_user):
     """Test read_user API endpoint (admin reading other user)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval
         mock_get_user.return_value = mock_user
         
         # Test function
-        user = await read_user(1, mock_db, mock_superuser)
+        user = await read_user(1, db, mock_superuser)
         
         # Verify
         assert user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, 1)
+        mock_get_user.assert_called_once_with(db, 1)
 
 
 @pytest.mark.asyncio
-async def test_read_user_by_id_unauthorized(mock_db, mock_user):
+async def test_read_user_by_id_unauthorized(db, mock_user):
     """Test read_user API endpoint (user trying to read other user)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval - a different user
@@ -414,7 +414,7 @@ async def test_read_user_by_id_unauthorized(mock_db, mock_user):
         
         # Test function
         with pytest.raises(HTTPException) as exc_info:
-            await read_user(2, mock_db, mock_user)
+            await read_user(2, db, mock_user)
         
         # Verify exception details
         assert exc_info.value.status_code == 403
@@ -422,7 +422,7 @@ async def test_read_user_by_id_unauthorized(mock_db, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_read_user_not_found(mock_db, mock_superuser):
+async def test_read_user_not_found(db, mock_superuser):
     """Test read_user with nonexistent user."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval
@@ -430,7 +430,7 @@ async def test_read_user_not_found(mock_db, mock_superuser):
         
         # Test function
         with pytest.raises(HTTPException) as exc_info:
-            await read_user(999, mock_db, mock_superuser)
+            await read_user(999, db, mock_superuser)
         
         # Verify exception details
         assert exc_info.value.status_code == 404
@@ -438,11 +438,11 @@ async def test_read_user_not_found(mock_db, mock_superuser):
 
 
 @pytest.mark.asyncio
-async def test_update_user(mock_db, mock_user):
+async def test_update_user(db, mock_user):
     """Test update_user service function."""
     # Mock DB operations
-    mock_db.commit = AsyncMock()
-    mock_db.refresh = AsyncMock()
+    db.commit = AsyncMock()
+    db.refresh = AsyncMock()
     
     # Test data
     user_update = UserUpdate(
@@ -455,7 +455,7 @@ async def test_update_user(mock_db, mock_user):
     with patch("app.services.users.get_password_hash") as mock_get_hash:
         mock_get_hash.return_value = "new_hashed_password"
         
-        updated_user = await update_user(mock_db, mock_user, user_update)
+        updated_user = await update_user(db, mock_user, user_update)
         
         # Verify user update
         assert updated_user == mock_user
@@ -464,12 +464,12 @@ async def test_update_user(mock_db, mock_user):
         assert mock_user.is_active is False
         
         # Verify DB operations
-        mock_db.commit.assert_called_once()
-        mock_db.refresh.assert_called_once()
+        db.commit.assert_called_once()
+        db.refresh.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_update_user_endpoint(mock_db, mock_user):
+async def test_update_user_endpoint(db, mock_user):
     """Test update_user_endpoint API function (user updating self)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user, \
          patch("app.api.users.update_user") as mock_update:
@@ -486,16 +486,16 @@ async def test_update_user_endpoint(mock_db, mock_user):
         )
         
         # Test function
-        updated_user = await update_user_endpoint(1, user_update, mock_db, mock_user)
+        updated_user = await update_user_endpoint(1, user_update, db, mock_user)
         
         # Verify
         assert updated_user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, 1)
-        mock_update.assert_called_once_with(mock_db, mock_user, user_update)
+        mock_get_user.assert_called_once_with(db, 1)
+        mock_update.assert_called_once_with(db, mock_user, user_update)
 
 
 @pytest.mark.asyncio
-async def test_update_user_endpoint_as_admin(mock_db, mock_superuser, mock_user):
+async def test_update_user_endpoint_as_admin(db, mock_superuser, mock_user):
     """Test update_user_endpoint (admin updating other user)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user, \
          patch("app.api.users.update_user") as mock_update:
@@ -511,16 +511,16 @@ async def test_update_user_endpoint_as_admin(mock_db, mock_superuser, mock_user)
         )
         
         # Test function
-        updated_user = await update_user_endpoint(1, user_update, mock_db, mock_superuser)
+        updated_user = await update_user_endpoint(1, user_update, db, mock_superuser)
         
         # Verify
         assert updated_user == mock_user
-        mock_get_user.assert_called_once_with(mock_db, 1)
-        mock_update.assert_called_once_with(mock_db, mock_user, user_update)
+        mock_get_user.assert_called_once_with(db, 1)
+        mock_update.assert_called_once_with(db, mock_user, user_update)
 
 
 @pytest.mark.asyncio
-async def test_update_user_endpoint_unauthorized(mock_db, mock_user):
+async def test_update_user_endpoint_unauthorized(db, mock_user):
     """Test update_user_endpoint (user trying to update other user)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval - a different user
@@ -533,7 +533,7 @@ async def test_update_user_endpoint_unauthorized(mock_db, mock_user):
         
         # Test function
         with pytest.raises(HTTPException) as exc_info:
-            await update_user_endpoint(2, user_update, mock_db, mock_user)
+            await update_user_endpoint(2, user_update, db, mock_user)
         
         # Verify exception details
         assert exc_info.value.status_code == 403
@@ -541,7 +541,7 @@ async def test_update_user_endpoint_unauthorized(mock_db, mock_user):
 
 
 @pytest.mark.asyncio
-async def test_update_user_endpoint_change_superuser_unauthorized(mock_db, mock_user):
+async def test_update_user_endpoint_change_superuser_unauthorized(db, mock_user):
     """Test update_user_endpoint (user trying to make self superuser)."""
     with patch("app.api.users.get_user_by_id") as mock_get_user:
         # Mock user retrieval
@@ -552,7 +552,7 @@ async def test_update_user_endpoint_change_superuser_unauthorized(mock_db, mock_
         
         # Test function
         with pytest.raises(HTTPException) as exc_info:
-            await update_user_endpoint(1, user_update, mock_db, mock_user)
+            await update_user_endpoint(1, user_update, db, mock_user)
         
         # Verify exception details
         assert exc_info.value.status_code == 403
