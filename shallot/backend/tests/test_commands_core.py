@@ -35,12 +35,14 @@ def await_mock(return_value):
     async def _awaitable():
         return return_value
     return _awaitable()
+@pytest.fixture
 
 def mock_db():
     """Create a mock database session."""
     return AsyncMock()
 
 
+@pytest.fixture
 @pytest.fixture
 def mock_user():
     """Create a mock user."""
@@ -55,6 +57,7 @@ def mock_user():
 
 
 @pytest.fixture
+@pytest.fixture
 def mock_chat_user():
     """Create a mock chat user."""
     user = MagicMock()
@@ -65,6 +68,7 @@ def mock_chat_user():
     return user
 
 
+@pytest.fixture
 @pytest.fixture
 def mock_command():
     """Create a mock command definition."""

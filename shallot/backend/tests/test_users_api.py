@@ -36,6 +36,7 @@ def await_mock(return_value):
     return _awaitable()
 
 @pytest.fixture
+@pytest.fixture
 def mock_db():
     """Create a mock database session."""
     return MagicMock(spec=AsyncSession)

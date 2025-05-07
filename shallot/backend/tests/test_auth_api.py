@@ -29,6 +29,7 @@ def await_mock(return_value):
     async def _awaitable():
         return return_value
     return _awaitable()
+@pytest.fixture
 
 def mock_db():
     """Create a mock database session."""

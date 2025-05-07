@@ -17,7 +17,7 @@ def fix_test_file(file_path):
     original_content = content
     
     # Check if we need to make any changes
-    if "mock_db" not in content:
+    if "mock_db" not in content and "mock_so_client" not in content:
         return False
     
     print(f"DEBUG: Processing {file_path}")
@@ -44,6 +44,26 @@ def fix_test_file(file_path):
         r"async def \1(db\2):",
         content
     )
+    
+    # Fix missing @pytest.fixture decorators
+    # Look for fixture definitions without the decorator
+    fixture_def_pattern = r"\ndef (mock_\w+)\(\):"
+    fixture_defs = re.findall(fixture_def_pattern, content)
+    
+    for fixture_name in fixture_defs:
+        print(f"DEBUG: Found fixture definition for {fixture_name}")
+        # Check if it's missing the decorator
+        fixture_def_line = re.search(r"\ndef " + fixture_name + r"\(\):", content)
+        if fixture_def_line:
+            line_index = content[:fixture_def_line.start()].count('\n')
+            lines = content.split('\n')
+            
+            # Check if the line before contains @pytest.fixture
+            if line_index > 0 and "@pytest.fixture" not in lines[line_index-1]:
+                print(f"DEBUG: Adding missing @pytest.fixture decorator for {fixture_name}")
+                lines.insert(line_index, "@pytest.fixture")
+                content = '\n'.join(lines)
+                print(f"DEBUG: Added decorator for {fixture_name}")
     
     # For test_commands_core.py and similar files, they define their own mock_db fixture
     # but use it in test functions. We need to handle this case specially.

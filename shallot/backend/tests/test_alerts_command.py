@@ -10,13 +10,13 @@ from app.core.securityonion import SecurityOnionClient
 
 
 @pytest.fixture
-
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""
     async def _awaitable():
         return return_value
     return _awaitable()
 
+@pytest.fixture
 def mock_so_client():
     """Create a mock Security Onion client."""
     client = MagicMock(spec=SecurityOnionClient)
