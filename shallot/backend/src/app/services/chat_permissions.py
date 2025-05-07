@@ -28,6 +28,18 @@ async def get_chat_user_role(db: AsyncSession, platform: str, platform_id: str) 
     if hasattr(user, "__await__"):
 
         user = await user
+
+    # In Python 3.13, scalar_one might return a coroutine
+
+    if hasattr(user, "__await__"):
+
+        user = await user
+
+    # In Python 3.13, scalar_one might return a coroutine
+
+    if hasattr(user, "__await__"):
+
+        user = await user
     return user.role if user else None
 
 async def check_command_permission(

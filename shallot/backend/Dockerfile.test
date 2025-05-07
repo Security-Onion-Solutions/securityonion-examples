@@ -29,6 +29,10 @@ FROM base AS test
 ARG COVERAGE_THRESHOLD=50
 ARG TEST_PATH="tests/test_validation.py::test_validate_command_format"
 
+# Run Python 3.13 compatibility fixes
+RUN echo "Running Python 3.13 compatibility fixes..." && \
+    python -m fix_async_tests
+
 # Run a specific test that we know works with Python 3.13
 RUN mkdir -p /app/coverage && \
     echo "Running test: ${TEST_PATH}" && \

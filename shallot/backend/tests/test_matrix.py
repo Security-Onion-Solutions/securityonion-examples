@@ -10,8 +10,6 @@ from app.services.settings import get_setting
 from app.core.chat_services import MatrixService
 
 
-@pytest.fixture
-
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""
     async def _awaitable():

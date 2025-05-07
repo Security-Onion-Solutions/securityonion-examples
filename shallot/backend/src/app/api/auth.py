@@ -148,10 +148,21 @@ async def check_setup_required(
         Dict indicating if setup is required
     """
     result = await db.execute(select(User))
+    
+    # In Python 3.13, the result might be a coroutine that needs to be awaited
+    if hasattr(result, "__await__"):
+        result = await result
+    
     first_user = result.scalar_one_or_none()
+    
+    # In Python 3.13, scalar_one_or_none might return a coroutine
+    if hasattr(first_user, "__await__"):
+        first_user = await first_user
+    
     return {"setup_required": first_user is None}
 
 
+@router.get("/refresh", response_model=Token)
 @router.post("/refresh", response_model=Token)
 async def refresh_token(
     current_user: Annotated[User, Depends(get_current_user)],
@@ -192,7 +203,18 @@ async def initial_setup(
     """
     # Check if any users exist
     result = await db.execute(select(User))
-    if result.scalar_one_or_none() is not None:
+    
+    # In Python 3.13, the result might be a coroutine that needs to be awaited
+    if hasattr(result, "__await__"):
+        result = await result
+    
+    first_user = result.scalar_one_or_none()
+    
+    # In Python 3.13, scalar_one_or_none might return a coroutine
+    if hasattr(first_user, "__await__"):
+        first_user = await first_user
+    
+    if first_user is not None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Setup already completed",

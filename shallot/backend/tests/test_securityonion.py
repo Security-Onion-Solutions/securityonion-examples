@@ -1,14 +1,12 @@
 """Tests for Security Onion client module."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 from datetime import datetime, timedelta
 import httpx
 
 from app.core.securityonion import SecurityOnionClient
 
-
-@pytest.fixture
 
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""

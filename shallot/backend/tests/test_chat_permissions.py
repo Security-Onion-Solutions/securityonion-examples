@@ -1,6 +1,6 @@
 """Tests for chat permissions service."""
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, call
+from unittest.mock import patch, MagicMock, AsyncMock, call, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
@@ -14,7 +14,15 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async def test_get_chat_user_role(db: AsyncSession):
+async 
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
+def test_get_chat_user_role(db: AsyncSession):
     """Test getting a chat user's role."""
     # Create a test user
     test_user = ChatUser(
@@ -39,8 +47,15 @@ async def test_get_chat_user_role(db: AsyncSession):
 async def test_get_chat_user_role_python_313(db: AsyncSession):
     """Test get_chat_user_role with Python 3.13 coroutine handling."""
     # Mock database query result
-    mock_scalar = AsyncMock()
+    mock_scalar = MagicMock()
     mock_scalar.scalar_one_or_none.return_value = await_mock(MagicMock(role=ChatUserRole.BASIC))
+
+    mock_scalar.scalar_one_or_none.return_value = await_mock(mock_scalar.scalar_one_or_none.return_value)
+
+    mock_scalar.scalar_one_or_none.return_value = await_mock(mock_scalar.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_scalar.scalar_one_or_none.return_value = await_mock(mock_scalar.scalar_one_or_none.return_value)
     
     # Mock db.execute
     with patch.object(db, 'execute', return_value=await_mock(mock_scalar)):

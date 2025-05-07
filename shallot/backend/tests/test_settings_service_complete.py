@@ -1,7 +1,7 @@
 """Comprehensive tests for settings service."""
 import json
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock, call
+from unittest.mock import patch, MagicMock, AsyncMock, call, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy import select
@@ -23,7 +23,15 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async def test_create_setting(db: AsyncSession):
+async 
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
+def test_create_setting(db: AsyncSession):
     """Test creating a setting."""
     # Create test setting
     setting_data = SettingCreate(key="TEST_KEY", value="test_value", description="Test setting")
@@ -75,6 +83,13 @@ async def test_get_setting(db: AsyncSession):
     mock_result = MagicMock()
     mock_scalar = MagicMock()
     mock_result.scalar_one_or_none.return_value = await_mock(mock_scalar)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     
     with patch.object(db, 'execute', return_value=await_mock(mock_result)):
         setting = await get_setting(db, "COROUTINE_KEY")

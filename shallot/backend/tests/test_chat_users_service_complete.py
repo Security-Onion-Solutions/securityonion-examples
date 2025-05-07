@@ -2,7 +2,7 @@
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, text, insert
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, MagicMock
 
 from app.models.chat_users import ChatUser, ChatUserRole, ChatService
 from app.services.chat_users import (
@@ -18,7 +18,15 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async def test_get_chat_user_by_platform_id(db):
+async 
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
+def test_get_chat_user_by_platform_id(db):
     """Test getting a chat user by platform ID."""
     # Create a test user directly in the database
     test_user = ChatUser(
@@ -50,6 +58,13 @@ async def test_get_chat_user_by_platform_id(db):
          patch.object(db, 'execute', return_value=await_mock(MagicMock())) as mock_execute:
         mock_result = mock_execute.return_value
         mock_result.scalar_one_or_none.return_value = await_mock(None)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         
         result = await get_chat_user_by_platform_id(db, "test456", ChatService.DISCORD)
         assert result is None
@@ -174,6 +189,13 @@ async def test_get_chat_user_by_id(db: AsyncSession):
     with patch.object(db, 'execute', return_value=await_mock(MagicMock())) as mock_execute:
         mock_result = mock_execute.return_value
         mock_result.scalar_one_or_none.return_value = await_mock(test_user)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         
         result = await get_chat_user_by_id(db, user_id)
         assert result is test_user

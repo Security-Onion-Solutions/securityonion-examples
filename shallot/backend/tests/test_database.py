@@ -13,8 +13,6 @@ from app.database import (
 )
 
 
-@pytest.fixture
-
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""
     async def _awaitable():
@@ -104,7 +102,7 @@ async def test_init_db(mock_engine):
 
         mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)
 
-        mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)
+        mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)  # Make awaitable for Python 3.13
 
 
         mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)

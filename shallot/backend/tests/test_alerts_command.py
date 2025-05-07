@@ -1,7 +1,7 @@
 """Tests for alerts command."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 import httpx
 
 from app.api.commands.alerts import process

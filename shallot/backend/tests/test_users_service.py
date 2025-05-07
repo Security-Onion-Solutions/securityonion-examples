@@ -1,6 +1,6 @@
 """Tests for users service."""
 import pytest
-from unittest.mock import patch, MagicMock, AsyncMock
+from unittest.mock import patch, MagicMock, AsyncMock, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
@@ -19,7 +19,15 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async def test_get_user_count(db: AsyncSession):
+async 
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
+def test_get_user_count(db: AsyncSession):
     """Test counting users in the database."""
     # Create test users
     for i in range(3):
@@ -45,8 +53,15 @@ async def test_get_user_count(db: AsyncSession):
 async def test_get_user_count_python_313(db: AsyncSession):
     """Test get_user_count with Python 3.13 coroutine handling."""
     # Mock the database query
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one.return_value = await_mock(5)
+
+    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
+
+    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
     
     # Mock db.execute
     with patch.object(db, 'execute', return_value=await_mock(mock_result)):
@@ -87,8 +102,15 @@ async def test_get_user_by_username_python_313(db: AsyncSession):
     mock_user = MagicMock(username="testuser")
     
     # Mock the database query
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = await_mock(mock_user)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     
     # Mock db.execute
     with patch.object(db, 'execute', return_value=await_mock(mock_result)):

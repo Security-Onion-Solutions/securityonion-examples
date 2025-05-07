@@ -1,12 +1,10 @@
 """Tests for chat service manager module."""
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.core.chat_manager import ChatServiceManager
 from app.models.chat_users import ChatService, ChatUserRole
 
-
-@pytest.fixture
 
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""

@@ -97,12 +97,17 @@ async def test_get_setting(db, mock_setting):
     mock_result.scalar_one_or_none.return_value = mock_setting
 
     mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
     db.execute.return_value = mock_result
 
     
-    db.execute.return_value = await_mock(db.execute.return_value)
+    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test the function
@@ -121,12 +126,17 @@ async def test_get_setting_not_found(db):
     mock_result.scalar_one_or_none.return_value = None
 
     mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
+
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
     db.execute.return_value = mock_result
 
     
-    db.execute.return_value = await_mock(db.execute.return_value)
+    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test the function
@@ -150,7 +160,7 @@ async def test_get_settings(db, mock_setting):
     db.execute.return_value = mock_result
 
     
-    db.execute.return_value = await_mock(db.execute.return_value)
+    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test the function
@@ -693,7 +703,7 @@ async def test_init_default_settings(db):
     mock_result.fetchall.return_value = [("existing_key",)]
     db.execute.return_value = mock_result
 
-    db.execute.return_value = await_mock(db.execute.return_value)
+    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Mock settings operations

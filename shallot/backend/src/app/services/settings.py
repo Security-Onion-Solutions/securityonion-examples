@@ -68,6 +68,24 @@ async def get_setting(db: AsyncSession, key: str) -> Optional[SettingsModel]:
 
             
             scalar_result = await scalar_result
+
+            
+        # In Python 3.13, scalar_one might return a coroutine
+
+            
+        if hasattr(scalar_result, "__await__"):
+
+            
+            scalar_result = await scalar_result
+
+            
+        # In Python 3.13, scalar_one might return a coroutine
+
+            
+        if hasattr(scalar_result, "__await__"):
+
+            
+            scalar_result = await scalar_result
         # In Python 3.13, scalar_one_or_none might return a coroutine
         if hasattr(scalar_result, "__await__"):
             scalar_result = await scalar_result

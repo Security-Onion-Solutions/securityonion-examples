@@ -1,7 +1,7 @@
 """Tests for command processing core module."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
@@ -35,6 +35,7 @@ def await_mock(return_value):
         return return_value
     return _awaitable()
 
+
 @pytest.fixture
 def mock_db():
     """Create a mock database session."""
@@ -55,7 +56,6 @@ def mock_user():
 
 
 @pytest.fixture
-@pytest.fixture
 def mock_chat_user():
     """Create a mock chat user."""
     user = MagicMock()
@@ -66,7 +66,6 @@ def mock_chat_user():
     return user
 
 
-@pytest.fixture
 @pytest.fixture
 def mock_command():
     """Create a mock command definition."""
