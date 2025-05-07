@@ -1,6 +1,6 @@
 """Tests for database module."""
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock, call
+from unittest.mock import patch, AsyncMock, MagicMock, call, MagicMock
 from sqlalchemy.ext.asyncio import AsyncSession, AsyncEngine
 
 from app.database import (
@@ -14,6 +14,13 @@ from app.database import (
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def mock_engine():
     """Create a mock SQLAlchemy engine."""
     mock = AsyncMock(spec=AsyncEngine)
@@ -91,9 +98,16 @@ async def test_init_db(mock_engine):
         mock_base.metadata.create_all = MagicMock()
         
         # Mock query execution
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.fetchall.return_value = [("users",), ("settings",)]
         mock_engine.execute.return_value = mock_result
+
+        mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)
+
+        mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)
+
+
+        mock_engine.execute.return_value = await_mock(mock_engine.execute.return_value)
         
         # Mock text function
         mock_text.return_value = "SELECT name FROM sqlite_master WHERE type='table';"

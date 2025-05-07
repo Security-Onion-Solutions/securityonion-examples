@@ -26,7 +26,23 @@ async def get_chat_user_by_platform_id(
     logger.debug(f"Executing query: {query}")
     
     result = await db.execute(query)
+    # In Python 3.13, result might be a coroutine
+    if hasattr(result, "__await__"):
+        result = await result
+        
     user = result.scalar_one_or_none()
+
+        
+    # In Python 3.13, scalar_one might return a coroutine
+
+        
+    if hasattr(user, "__await__"):
+
+        
+        user = await user
+    # In Python 3.13, scalar_one_or_none might return a coroutine
+    if hasattr(user, "__await__"):
+        user = await user
     
     if user:
         logger.info(f"Found user: {user.username} with role: {user.role}")
@@ -89,7 +105,16 @@ async def get_chat_user_by_id(db: AsyncSession, user_id: int) -> Optional[ChatUs
     result = await db.execute(
         select(ChatUser).where(ChatUser.id == user_id)
     )
-    return result.scalar_one_or_none()
+    # In Python 3.13, result might be a coroutine
+    if hasattr(result, "__await__"):
+        result = await result
+        
+    user = result.scalar_one_or_none()
+    # In Python 3.13, scalar_one_or_none might return a coroutine
+    if hasattr(user, "__await__"):
+        user = await user
+        
+    return user
 
 
 async def get_all_chat_users(
@@ -101,7 +126,16 @@ async def get_all_chat_users(
         .offset(skip)
         .limit(limit)
     )
-    return result.scalars().all()
+    # In Python 3.13, result might be a coroutine
+    if hasattr(result, "__await__"):
+        result = await result
+        
+    scalars_result = result.scalars()
+    # In Python 3.13, scalars() might return a coroutine
+    if hasattr(scalars_result, "__await__"):
+        scalars_result = await scalars_result
+        
+    return scalars_result.all()
 
 
 async def update_chat_user_role(

@@ -1,7 +1,7 @@
 """Tests for command processing core module."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
@@ -29,6 +29,13 @@ client = TestClient(app)
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def mock_db():
     """Create a mock database session."""
     return AsyncMock()
@@ -217,7 +224,7 @@ async def test_validate_command_access_with_user(mock_command, mock_chat_user):
          patch("app.api.commands.core.get_chat_user_by_platform_id") as mock_get_user, \
          patch("app.api.commands.core.has_permission") as mock_has_permission:
         # Mock session context manager
-        mock_session_instance = AsyncMock()
+        mock_session_instance = MagicMock()
         mock_session.return_value.__aenter__.return_value = mock_session_instance
         
         # Set command to require basic permission
@@ -247,7 +254,7 @@ async def test_validate_command_access_insufficient_permissions(mock_command):
          patch("app.api.commands.core.get_chat_user_by_platform_id") as mock_get_user, \
          patch("app.api.commands.core.has_permission") as mock_has_permission:
         # Mock session context manager
-        mock_session_instance = AsyncMock()
+        mock_session_instance = MagicMock()
         mock_session.return_value.__aenter__.return_value = mock_session_instance
         
         # Set command to require admin permission
@@ -278,7 +285,7 @@ async def test_validate_command_access_user_not_found(mock_command):
          patch("app.api.commands.core.AsyncSessionLocal") as mock_session, \
          patch("app.api.commands.core.get_chat_user_by_platform_id") as mock_get_user:
         # Mock session context manager
-        mock_session_instance = AsyncMock()
+        mock_session_instance = MagicMock()
         mock_session.return_value.__aenter__.return_value = mock_session_instance
         
         # Set command to require basic permission
@@ -317,7 +324,7 @@ async def test_list_commands_chat_user(mock_user, mock_chat_user):
          patch("app.api.commands.core.get_command_permission") as mock_get_permission, \
          patch("app.api.commands.core.has_permission") as mock_has_permission:
         # Mock session context manager
-        mock_session_instance = AsyncMock()
+        mock_session_instance = MagicMock()
         mock_session.return_value.__aenter__.return_value = mock_session_instance
         
         # Set user type to chat
@@ -459,7 +466,7 @@ async def test_test_command_insufficient_permissions(mock_user, mock_chat_user, 
          patch("app.api.commands.core.get_command_permission") as mock_get_permission, \
          patch("app.api.commands.core.has_permission") as mock_has_permission:
         # Mock session context manager
-        mock_session_instance = AsyncMock()
+        mock_session_instance = MagicMock()
         mock_session.return_value.__aenter__.return_value = mock_session_instance
         
         # Set user type to chat

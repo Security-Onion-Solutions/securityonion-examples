@@ -22,6 +22,12 @@ async def get_chat_user_role(db: AsyncSession, platform: str, platform_id: str) 
         .where(ChatUser.platform_id == platform_id)
     )
     user = result.scalar_one_or_none()
+
+    # In Python 3.13, scalar_one might return a coroutine
+
+    if hasattr(user, "__await__"):
+
+        user = await user
     return user.role if user else None
 
 async def check_command_permission(

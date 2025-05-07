@@ -17,8 +17,27 @@ async def get_user_count(db: AsyncSession) -> int:
     Returns:
         Number of users in database
     """
+    # In Python 3.13, db.execute returns a coroutine that must be awaited
     result = await db.execute(select(func.count()).select_from(User))
-    return result.scalar_one()
+    
+    # Get scalar_one value
+    scalar_result = result.scalar_one()
+
+    # In Python 3.13, scalar_one might return a coroutine
+
+    if hasattr(scalar_result, "__await__"):
+
+        scalar_result = await scalar_result
+    
+    # In Python 3.13, scalar_one might also return a coroutine that must be awaited
+    if hasattr(scalar_result, "__await__"):
+        scalar_result = await scalar_result
+    
+    # In Python 3.13, scalar_one might also return a coroutine that must be awaited
+    if hasattr(scalar_result, "__await__"):
+        scalar_result = await scalar_result
+        
+    return scalar_result
 
 
 async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User]:
@@ -32,7 +51,16 @@ async def get_user_by_username(db: AsyncSession, username: str) -> Optional[User
         User if found, None otherwise
     """
     result = await db.execute(select(User).where(User.username == username))
-    return result.scalar_one_or_none()
+    # In Python 3.13, we need to ensure result is not a coroutine before calling methods on it
+    if hasattr(result, "__await__"):  # If result is awaitable
+        result = await result
+    
+    scalar_result = result.scalar_one_or_none()
+    # In Python 3.13, scalar_one_or_none might return a coroutine
+    if hasattr(scalar_result, "__await__"):
+        scalar_result = await scalar_result
+        
+    return scalar_result
 
 
 async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
@@ -45,7 +73,11 @@ async def get_user_by_id(db: AsyncSession, user_id: int) -> Optional[User]:
     Returns:
         User if found, None otherwise
     """
-    return await db.get(User, user_id)
+    result = await db.get(User, user_id)
+    # In Python 3.13, db.get might return a coroutine
+    if hasattr(result, "__await__"):
+        result = await result
+    return result
 
 
 async def authenticate_user(

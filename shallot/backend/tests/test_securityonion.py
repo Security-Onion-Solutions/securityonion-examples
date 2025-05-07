@@ -1,7 +1,7 @@
 """Tests for Security Onion client module."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
 from datetime import datetime, timedelta
 import httpx
 
@@ -9,6 +9,13 @@ from app.core.securityonion import SecurityOnionClient
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def mock_db():
     """Create a mock database session."""
     return AsyncMock()
@@ -217,7 +224,7 @@ async def test_test_connection_success(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful health check
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.headers = {"content-type": "application/json"}
         mock_response.text = "{}"
@@ -287,7 +294,7 @@ async def test_test_connection_health_failure(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock failed health check
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 404
         mock_response.headers = {"content-type": "application/json"}
         mock_response.text = '{"detail": "Not found"}'
@@ -332,7 +339,7 @@ async def test_ensure_token_expired(so_client, mock_httpx_client):
     so_client._token_expires = datetime.utcnow() - timedelta(minutes=10)
     
     # Mock successful token request
-    mock_response = AsyncMock()
+    mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
     mock_response.text = '{"access_token": "new_token", "expires_in": 3600}'
@@ -360,7 +367,7 @@ async def test_ensure_token_no_token(so_client, mock_httpx_client):
     so_client._token_expires = None
     
     # Mock successful token request
-    mock_response = AsyncMock()
+    mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
     mock_response.text = '{"access_token": "new_token", "expires_in": 3600}'
@@ -388,7 +395,7 @@ async def test_ensure_token_request_failure(so_client, mock_httpx_client):
     so_client._token_expires = None
     
     # Mock failed token request
-    mock_response = AsyncMock()
+    mock_response = MagicMock()
     mock_response.status_code = 401
     mock_response.headers = {"content-type": "application/json"}
     mock_response.text = '{"detail": "Unauthorized"}'
@@ -415,7 +422,7 @@ async def test_ensure_token_invalid_response(so_client, mock_httpx_client):
     so_client._token_expires = None
     
     # Mock response missing required fields
-    mock_response = AsyncMock()
+    mock_response = MagicMock()
     mock_response.status_code = 200
     mock_response.headers = {"content-type": "application/json"}
     mock_response.text = '{"token": "new_token"}'  # Wrong field name
@@ -475,7 +482,7 @@ async def test_get_event(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful event retrieval
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "events": [
@@ -507,7 +514,7 @@ async def test_get_event_not_found(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock empty event response
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"events": []}
         mock_httpx_client.get.return_value = mock_response
@@ -549,7 +556,7 @@ async def test_create_case(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful case creation
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"id": "case1", "title": "Test Case"}
         mock_httpx_client.post.return_value = mock_response
@@ -579,7 +586,7 @@ async def test_create_case_failure(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock failed case creation
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 400
         mock_response.json.return_value = {"error": "Invalid data"}
         mock_httpx_client.post.return_value = mock_response
@@ -604,7 +611,7 @@ async def test_search_events(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful event search
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {
             "events": [
@@ -643,7 +650,7 @@ async def test_search_events_custom_limit(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful event search
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"events": []}
         mock_httpx_client.get.return_value = mock_response
@@ -668,7 +675,7 @@ async def test_search_events_no_results(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock empty search results
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_response.json.return_value = {"events": []}
         mock_httpx_client.get.return_value = mock_response
@@ -692,7 +699,7 @@ async def test_add_event_to_case(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock successful event addition
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 200
         mock_httpx_client.post.return_value = mock_response
         
@@ -721,7 +728,7 @@ async def test_add_event_to_case_failure(so_client, mock_httpx_client):
         mock_ensure_token.return_value = True
         
         # Mock failed event addition
-        mock_response = AsyncMock()
+        mock_response = MagicMock()
         mock_response.status_code = 400
         mock_httpx_client.post.return_value = mock_response
         

@@ -20,3 +20,45 @@ def is_valid_fernet_key(key):
         return True
     except Exception:
         return False
+
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13.
+    
+    This function takes a return value and wraps it in a coroutine that can be awaited.
+    Especially useful for tests in Python 3.13 where mocks need to be awaitable.
+    
+    Args:
+        return_value: The value to be returned when the coroutine is awaited
+        
+    Returns:
+        A coroutine that when awaited, returns the given return_value
+    """
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
+
+def make_mock_awaitable(mock_obj, method_name, return_value=None):
+    """Make a mock method's return value awaitable.
+    
+    Sets up a mock method to return an awaitable coroutine that resolves to the 
+    provided return_value.
+    
+    Args:
+        mock_obj: The mock object
+        method_name: The name of the method to make awaitable
+        return_value: The value to be returned when the coroutine is awaited.
+                     If None, will use the current return_value of the method.
+    """
+    method = getattr(mock_obj, method_name)
+    
+    # If return_value is not provided, use the existing one
+    if return_value is None:
+        return_value = method.return_value
+        
+    # Set the return value
+    method.return_value = return_value
+    
+    # Make it awaitable
+    method.return_value = await_mock(return_value)

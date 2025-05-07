@@ -1,7 +1,7 @@
 """Tests for Matrix integration."""
 import json
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch, MagicMock
 import nio
 
 from app.core.matrix import MatrixClient
@@ -11,6 +11,13 @@ from app.core.chat_services import MatrixService
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def matrix_client():
     """Create MatrixClient instance for testing."""
     return MatrixClient()
@@ -251,7 +258,7 @@ async def test_matrix_client_handle_message(matrix_client):
         matrix_client.send_message = AsyncMock()
         
         # Setup Matrix service mock
-        mock_matrix_service = AsyncMock()
+        mock_matrix_service = MagicMock()
         mock_matrix_service.validate_user_id.return_value = True
         mock_matrix_service.get_display_name.return_value = "Test User"
         mock_matrix_service.format_message.return_value = "Formatted: Command response"
@@ -293,7 +300,7 @@ async def test_matrix_client_handle_message_invalid_user(matrix_client):
     
     # Mock Matrix service to reject invalid user ID
     with patch('app.core.chat_services.MatrixService') as mock_matrix_service_class:
-        mock_matrix_service = AsyncMock()
+        mock_matrix_service = MagicMock()
         mock_matrix_service.validate_user_id.return_value = False
         mock_matrix_service_class.return_value = mock_matrix_service
         
@@ -357,7 +364,7 @@ async def test_matrix_client_key_verification_loop(matrix_client):
 async def test_matrix_client_close(matrix_client):
     """Test MatrixClient close method."""
     matrix_client.client = AsyncMock(spec=nio.AsyncClient)
-    mock_task = AsyncMock()
+    mock_task = MagicMock()
     matrix_client._background_tasks.add(mock_task)
     
     await matrix_client.close()

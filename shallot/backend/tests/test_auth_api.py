@@ -1,6 +1,6 @@
 """Tests for authentication API endpoints."""
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -23,6 +23,13 @@ client = TestClient(app)
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def mock_db():
     """Create a mock database session."""
     return AsyncMock(spec=AsyncSession)
@@ -269,9 +276,23 @@ async def test_check_setup_required_empty(mock_db):
     """Test check_setup_required when no users exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (no users)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         mock_db.execute.return_value = mock_result
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
         
         # Test the function
         result = await check_setup_required(mock_db)
@@ -285,9 +306,23 @@ async def test_check_setup_required_with_users(mock_db, mock_user):
     """Test check_setup_required when users exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (with user)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         mock_db.execute.return_value = mock_result
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
         
         # Test the function
         result = await check_setup_required(mock_db)
@@ -303,9 +338,23 @@ async def test_initial_setup_first_user(mock_db):
          patch("app.api.auth.create_user") as mock_create_user, \
          patch("app.api.auth.create_access_token") as mock_create_token:
         # Setup mock for query result (no users)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         mock_db.execute.return_value = mock_result
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
         
         # Mock user creation
         new_user = MagicMock(spec=User)
@@ -340,9 +389,23 @@ async def test_initial_setup_users_exist(mock_db, mock_user):
     """Test initial_setup when users already exist."""
     with patch("app.api.auth.select") as mock_select:
         # Setup mock for query result (with user)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = mock_user
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         mock_db.execute.return_value = mock_result
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
         
         # Create user data
         user_in = UserCreate(
@@ -393,13 +456,27 @@ def test_api_setup_required_endpoint():
     """Test setup_required endpoint integration."""
     with patch("app.database.get_db", new_callable=AsyncMock) as mock_get_db:
         # Mock DB session
-        mock_db = AsyncMock()
+        mock_db = MagicMock()
         mock_get_db.return_value.__aenter__.return_value = mock_db
         
         # Mock DB query result (no users)
-        mock_result = AsyncMock()
+        mock_result = MagicMock()
         mock_result.scalar_one_or_none.return_value = None
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+
+
+        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
         mock_db.execute.return_value = mock_result
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+
+
+        mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
         
         # Make the request
         response = client.get("/api/auth/setup-required")

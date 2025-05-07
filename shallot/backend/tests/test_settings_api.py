@@ -31,18 +31,26 @@ from app.services.settings import (
 from app.models.settings import Settings as SettingsModel
 from app.schemas.settings import Setting, SettingCreate, SettingUpdate
 from app.core.default_settings import DEFAULT_SETTINGS
+from .utils import await_mock, make_mock_awaitable
 
 client = TestClient(app)
 
 
+
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 @pytest.fixture
 def mock_db():
     """Create a mock database session."""
-    db = AsyncMock(spec=AsyncSession)
+    db = MagicMock(spec=AsyncSession)
     db.commit = AsyncMock()
     db.refresh = AsyncMock()
     db.rollback = AsyncMock()
-    db.execute = AsyncMock()
     return db
 
 
@@ -88,9 +96,17 @@ async def test_create_setting(mock_db, mock_setting):
 async def test_get_setting(mock_db, mock_setting):
     """Test get_setting service function."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_setting
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    make_mock_awaitable(mock_result, "scalar_one_or_none")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test the function
     result = await get_setting(mock_db, "test_key")
@@ -104,9 +120,17 @@ async def test_get_setting(mock_db, mock_setting):
 async def test_get_setting_not_found(mock_db):
     """Test get_setting with nonexistent key."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    make_mock_awaitable(mock_result, "scalar_one_or_none")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test the function
     result = await get_setting(mock_db, "nonexistent")
@@ -120,11 +144,17 @@ async def test_get_setting_not_found(mock_db):
 async def test_get_settings(mock_db, mock_setting):
     """Test get_settings service function."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = [mock_setting]
     mock_result.scalars.return_value = mock_scalars
+    make_mock_awaitable(mock_result, "scalars")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test the function
     result = await get_settings(mock_db)
@@ -170,7 +200,7 @@ async def test_disable_other_chat_services(mock_db, mock_setting):
         matrix_setting.value = json.dumps({"enabled": True})
         
         # Configure the mock to return different settings
-        def get_setting_side_effect(db, key):
+        async def get_setting_side_effect(db, key):
             if key == "SLACK":
                 return slack_setting
             elif key == "DISCORD":
@@ -662,9 +692,12 @@ async def test_test_so_connection_error():
 async def test_init_default_settings(mock_db):
     """Test init_default_settings function."""
     # Mock DB execution for initial checks
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.fetchall.return_value = [("existing_key",)]
     mock_db.execute.return_value = mock_result
+
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Mock settings operations
     with patch("app.api.settings.get_setting") as mock_get_setting, \

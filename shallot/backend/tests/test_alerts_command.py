@@ -1,7 +1,7 @@
 """Tests for alerts command."""
 import pytest
 import json
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
 import httpx
 
 from app.api.commands.alerts import process
@@ -10,6 +10,13 @@ from app.core.securityonion import SecurityOnionClient
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def mock_so_client():
     """Create a mock Security Onion client."""
     client = MagicMock(spec=SecurityOnionClient)
@@ -19,7 +26,7 @@ def mock_so_client():
     client._client = AsyncMock(spec=httpx.AsyncClient)
     
     # Default to successful response
-    # mock_response = AsyncMock() # This was the issue for .json()
+    # mock_response = MagicMock() # This was the issue for .json()
     # mock_response.status_code = 200
     # mock_response.text = "{}"
     # mock_response.json = MagicMock(return_value={"events": []}) # Make .json() a MagicMock

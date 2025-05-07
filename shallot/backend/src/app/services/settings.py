@@ -54,7 +54,25 @@ async def get_setting(db: AsyncSession, key: str) -> Optional[SettingsModel]:
         result = await db.execute(
             select(SettingsModel).where(SettingsModel.key == key)
         )
-        return result.scalar_one_or_none()
+        # In Python 3.13, result might be a coroutine
+        if hasattr(result, "__await__"):
+            result = await result
+            
+        scalar_result = result.scalar_one_or_none()
+
+            
+        # In Python 3.13, scalar_one might return a coroutine
+
+            
+        if hasattr(scalar_result, "__await__"):
+
+            
+            scalar_result = await scalar_result
+        # In Python 3.13, scalar_one_or_none might return a coroutine
+        if hasattr(scalar_result, "__await__"):
+            scalar_result = await scalar_result
+            
+        return scalar_result
     except NoResultFound:
         return None
 
@@ -73,7 +91,17 @@ async def get_settings(
         List of settings
     """
     result = await db.execute(select(SettingsModel).offset(skip).limit(limit))
-    return list(result.scalars().all())
+    # In Python 3.13, result might be a coroutine
+    if hasattr(result, "__await__"):
+        result = await result
+        
+    scalars_result = result.scalars()
+    # In Python 3.13, scalars() might return a coroutine
+    if hasattr(scalars_result, "__await__"):
+        scalars_result = await scalars_result
+        
+    # Convert to a list to ensure it's a concrete type
+    return list(scalars_result.all())
 
 
 async def is_chat_service_enabled(setting_key: str, setting_value: str) -> bool:

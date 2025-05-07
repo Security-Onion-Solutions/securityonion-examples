@@ -1,19 +1,26 @@
 """Tests for chat service manager module."""
 import pytest
-from unittest.mock import patch, AsyncMock, MagicMock
+from unittest.mock import patch, AsyncMock, MagicMock, MagicMock
 
 from app.core.chat_manager import ChatServiceManager
 from app.models.chat_users import ChatService, ChatUserRole
 
 
 @pytest.fixture
+
+def await_mock(return_value):
+    """Helper function to make mock return values awaitable in Python 3.13."""
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 def chat_manager():
     """Create a chat manager for testing."""
     with patch('app.core.chat_manager.get_chat_service') as mock_get_service:
         # Mock service instances
-        mock_discord = AsyncMock()
-        mock_slack = AsyncMock()
-        mock_matrix = AsyncMock()
+        mock_discord = MagicMock()
+        mock_slack = MagicMock()
+        mock_matrix = MagicMock()
         
         # Configure the mock_get_service to return different mocks based on the input
         def get_service_side_effect(service):

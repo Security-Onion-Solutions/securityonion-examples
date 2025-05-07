@@ -22,14 +22,23 @@ from app.services.users import (
 )
 from app.models.users import User, UserType
 from app.schemas.users import UserCreate, UserUpdate
+from .utils import await_mock, make_mock_awaitable
 
 client = TestClient(app)
 
 
+
+
+def await_mock(return_value):
+    # Helper function to make mock return values awaitable in Python 3.13
+    async def _awaitable():
+        return return_value
+    return _awaitable()
+
 @pytest.fixture
 def mock_db():
     """Create a mock database session."""
-    return AsyncMock(spec=AsyncSession)
+    return MagicMock(spec=AsyncSession)
 
 
 @pytest.fixture
@@ -66,9 +75,17 @@ def mock_superuser():
 async def test_get_user_count(mock_db):
     """Test get_user_count service function."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one.return_value = 5
+
+    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
+    make_mock_awaitable(mock_result, "scalar_one")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test function
     count = await get_user_count(mock_db)
@@ -82,9 +99,17 @@ async def test_get_user_count(mock_db):
 async def test_get_user_by_username(mock_db, mock_user):
     """Test get_user_by_username service function."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_user
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    make_mock_awaitable(mock_result, "scalar_one_or_none")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test function
     user = await get_user_by_username(mock_db, "testuser")
@@ -98,9 +123,17 @@ async def test_get_user_by_username(mock_db, mock_user):
 async def test_get_user_by_username_not_found(mock_db):
     """Test get_user_by_username with nonexistent user."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
+
+    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    make_mock_awaitable(mock_result, "scalar_one_or_none")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test function
     user = await get_user_by_username(mock_db, "nonexistent")
@@ -115,6 +148,7 @@ async def test_get_user_by_id(mock_db, mock_user):
     """Test get_user_by_id service function."""
     # Mock DB get
     mock_db.get.return_value = mock_user
+    make_mock_awaitable(mock_db, "get")
     
     # Test function
     user = await get_user_by_id(mock_db, 1)
@@ -129,6 +163,7 @@ async def test_get_user_by_id_not_found(mock_db):
     """Test get_user_by_id with nonexistent user."""
     # Mock DB get
     mock_db.get.return_value = None
+    make_mock_awaitable(mock_db, "get")
     
     # Test function
     user = await get_user_by_id(mock_db, 999)
@@ -292,11 +327,17 @@ async def test_create_user_username_exists(mock_db, mock_superuser, mock_user):
 async def test_read_users(mock_db, mock_superuser):
     """Test read_users API endpoint."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = [mock_superuser]
     mock_result.scalars.return_value = mock_scalars
+    make_mock_awaitable(mock_result, "scalars")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test function
     users = await read_users(mock_db, mock_superuser)
@@ -311,11 +352,17 @@ async def test_read_users(mock_db, mock_superuser):
 async def test_read_users_with_filter(mock_db, mock_superuser):
     """Test read_users with user_type filter."""
     # Mock DB query result
-    mock_result = AsyncMock()
+    mock_result = MagicMock()
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = [mock_superuser]
     mock_result.scalars.return_value = mock_scalars
+    make_mock_awaitable(mock_result, "scalars")
+    
     mock_db.execute.return_value = mock_result
+
+    
+    mock_db.execute.return_value = await_mock(mock_db.execute.return_value)
+    make_mock_awaitable(mock_db, "execute")
     
     # Test function
     users = await read_users(mock_db, mock_superuser, user_type=UserType.WEB)
