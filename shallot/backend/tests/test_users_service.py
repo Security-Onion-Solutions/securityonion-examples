@@ -19,15 +19,47 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async 
+async def test_users_service_mock():
+    """Test users service with a completely mocked DB."""
+    # Create a mock DB session
+    mock_db = AsyncMock(spec=AsyncSession)
+    
+    # Test get_user_count with mocked DB
+    mock_result = MagicMock()
+    
+    async def mock_scalar_one():
+        return 10
+    
+    mock_result.scalar_one = AsyncMock(side_effect=mock_scalar_one)
+    
+    async def mock_execute(*args, **kwargs):
+        return mock_result
+    
+    mock_db.execute = AsyncMock(side_effect=mock_execute)
+    
+    # Call the function
+    count = await get_user_count(mock_db)
+    
+    # Verify the result
+    assert count == 10
+    
+    # Verify DB was called correctly
+    mock_db.execute.assert_called_once()
+    
+    # Get args passed to execute
+    args, kwargs = mock_db.execute.call_args
+    
+    # The first arg should be a select statement with a count function
+    # The exact SQL might vary slightly by SQLAlchemy version
+    select_str = str(args[0]).lower()
+    assert "select count" in select_str
+    assert "from users" in select_str
 
-def await_mock(return_value):
-    # Helper function to make mock return values awaitable in Python 3.13
-    async def _awaitable():
-        return return_value
-    return _awaitable()
 
-def test_get_user_count(db: AsyncSession):
+# Using await_mock from tests.utils
+
+@pytest.mark.asyncio
+async def test_get_user_count(db: AsyncSession):
     """Test counting users in the database."""
     # Create test users
     for i in range(3):
@@ -52,19 +84,22 @@ def test_get_user_count(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_get_user_count_python_313(db: AsyncSession):
     """Test get_user_count with Python 3.13 coroutine handling."""
-    # Mock the database query
+    # Create a more reliable mock with proper async behavior
     mock_result = MagicMock()
-    mock_result.scalar_one.return_value = await_mock(5)
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)  # Make awaitable for Python 3.13
-
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
     
-    # Mock db.execute
-    with patch.object(db, 'execute', return_value=await_mock(mock_result)):
+    # Create an async function that will properly return the value when awaited
+    async def mock_scalar_one():
+        return 5
+    
+    # Set up the mock's scalar_one method to return our awaitable function
+    mock_result.scalar_one = AsyncMock(side_effect=mock_scalar_one)
+    
+    # Create a mock for db.execute
+    async def mock_execute(*args, **kwargs):
+        return mock_result
+    
+    # Mock db.execute to return our async result
+    with patch.object(db, 'execute', AsyncMock(side_effect=mock_execute)):
         count = await get_user_count(db)
         assert count == 5
 
@@ -101,19 +136,22 @@ async def test_get_user_by_username_python_313(db: AsyncSession):
     # Mock user
     mock_user = MagicMock(username="testuser")
     
-    # Mock the database query
+    # Mock the database query result with proper async behavior
     mock_result = MagicMock()
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_user)
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
-
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
     
-    # Mock db.execute
-    with patch.object(db, 'execute', return_value=await_mock(mock_result)):
+    # Create an async function that will properly return the mock user when awaited
+    async def mock_scalar_one_or_none():
+        return mock_user
+    
+    # Set up the mock's scalar_one_or_none method to use our async function
+    mock_result.scalar_one_or_none = AsyncMock(side_effect=mock_scalar_one_or_none)
+    
+    # Create async mock for db.execute to return our result
+    async def mock_execute(*args, **kwargs):
+        return mock_result
+    
+    # Test the get_user_by_username function with our mocks
+    with patch.object(db, 'execute', AsyncMock(side_effect=mock_execute)):
         user = await get_user_by_username(db, "testuser")
         assert user == mock_user
 
@@ -151,8 +189,12 @@ async def test_get_user_by_id_python_313(db: AsyncSession):
     # Mock user
     mock_user = MagicMock(id=1, username="testuser")
     
+    # Create proper async mock for db.get
+    async def mock_get_user(*args, **kwargs):
+        return mock_user
+        
     # Mock db.get
-    with patch.object(db, 'get', return_value=await_mock(mock_user)):
+    with patch.object(db, 'get', AsyncMock(side_effect=mock_get_user)):
         user = await get_user_by_id(db, 1)
         assert user == mock_user
 
@@ -238,29 +280,29 @@ async def test_create_user_web(db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_create_user_api(db: AsyncSession):
-    """Test creating an API user."""
-    # Create user data for API user
+async def test_create_user_chat(db: AsyncSession):
+    """Test creating a CHAT user."""
+    # Create user data for CHAT user (replacing API with CHAT)
     user_data = UserCreate(
-        username="newapiuser",
-        password="apipassword",
+        username="newchatuser",
+        password="chatpassword",
         is_active=True,
         is_superuser=True,
-        user_type=UserType.API
+        user_type=UserType.CHAT
     )
     
     # Create the user
     user = await create_user(db, user_data)
     
     # Verify user was created
-    assert user.username == "newapiuser"
+    assert user.username == "newchatuser"
     assert user.is_active is True
     assert user.is_superuser is True
-    assert user.user_type == UserType.API
+    assert user.user_type == UserType.CHAT
     
     # Verify password was hashed
-    assert user.hashed_password != "apipassword"
-    assert verify_password("apipassword", user.hashed_password)
+    assert user.hashed_password != "chatpassword"
+    assert verify_password("chatpassword", user.hashed_password)
 
 
 @pytest.mark.asyncio
@@ -291,13 +333,13 @@ async def test_update_user_password(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_update_user_fields(db: AsyncSession):
     """Test updating various user fields."""
-    # Create a test user
+    # Create a test user with CHAT type (replacing API with CHAT)
     test_user = User(
         username="updatefieldsuser",
         hashed_password=get_password_hash("password"),
         is_active=True,
         is_superuser=False,
-        user_type=UserType.API
+        user_type=UserType.CHAT
     )
     db.add(test_user)
     await db.commit()

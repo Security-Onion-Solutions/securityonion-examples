@@ -24,16 +24,6 @@ async def get_user_count(db: AsyncSession) -> int:
     scalar_result = result.scalar_one()
 
     # In Python 3.13, scalar_one might return a coroutine
-
-    if hasattr(scalar_result, "__await__"):
-
-        scalar_result = await scalar_result
-    
-    # In Python 3.13, scalar_one might also return a coroutine that must be awaited
-    if hasattr(scalar_result, "__await__"):
-        scalar_result = await scalar_result
-    
-    # In Python 3.13, scalar_one might also return a coroutine that must be awaited
     if hasattr(scalar_result, "__await__"):
         scalar_result = await scalar_result
         

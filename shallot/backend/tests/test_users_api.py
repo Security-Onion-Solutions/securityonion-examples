@@ -27,16 +27,12 @@ from .utils import await_mock, make_mock_awaitable
 client = TestClient(app)
 
 
-def await_mock(return_value):
-    # Helper function to make mock return values awaitable in Python 3.13
-    async def _awaitable():
-        return return_value
-    return _awaitable()
+# Using await_mock from tests.utils
 
 @pytest.fixture
 def mock_db():
     """Create a mock database session."""
-    return MagicMock(spec=AsyncSession)
+    return AsyncMock(spec=AsyncSession)
 
 
 @pytest.fixture
@@ -74,21 +70,14 @@ async def test_get_user_count(db):
     """Test get_user_count service function."""
     # Mock DB query result
     mock_result = MagicMock()
-    mock_result.scalar_one.return_value = 5
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)  # Make awaitable for Python 3.13
-
-
-    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
-    make_mock_awaitable(mock_result, "scalar_one")
+    mock_result.scalar_one = MagicMock(return_value=5)
     
+    # Make scalar_one return value awaitable for Python 3.13
+    mock_result.scalar_one.return_value = await_mock(mock_result.scalar_one.return_value)
+    
+    # Make execute return an awaitable that resolves to mock_result
     db.execute.return_value = mock_result
-
-    
-    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
-    make_mock_awaitable(db, "execute")
+    db.execute.return_value = await_mock(db.execute.return_value)
     
     # Test function
     count = await get_user_count(db)
@@ -104,19 +93,12 @@ async def test_get_user_by_username(db, mock_user):
     # Mock DB query result
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = mock_user
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
-
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    
+    # Make scalar_one_or_none awaitable
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
+    # Make execute awaitable and return mock_result
     db.execute.return_value = mock_result
-
-    
-    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test function
@@ -133,19 +115,12 @@ async def test_get_user_by_username_not_found(db):
     # Mock DB query result
     mock_result = MagicMock()
     mock_result.scalar_one_or_none.return_value = None
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
-
-
-    mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
+    
+    # Make scalar_one_or_none awaitable
     make_mock_awaitable(mock_result, "scalar_one_or_none")
     
+    # Make execute awaitable and return mock_result
     db.execute.return_value = mock_result
-
-    
-    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test function
@@ -344,12 +319,12 @@ async def test_read_users(db, mock_superuser):
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = [mock_superuser]
     mock_result.scalars.return_value = mock_scalars
+    
+    # Make scalars method awaitable
     make_mock_awaitable(mock_result, "scalars")
     
+    # Make execute awaitable and return mock_result
     db.execute.return_value = mock_result
-
-    
-    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test function
@@ -369,12 +344,12 @@ async def test_read_users_with_filter(db, mock_superuser):
     mock_scalars = MagicMock()
     mock_scalars.all.return_value = [mock_superuser]
     mock_result.scalars.return_value = mock_scalars
+    
+    # Make scalars method awaitable
     make_mock_awaitable(mock_result, "scalars")
     
+    # Make execute awaitable and return mock_result
     db.execute.return_value = mock_result
-
-    
-    db.execute.return_value = await_mock(db.execute.return_value)  # Make awaitable for Python 3.13
     make_mock_awaitable(db, "execute")
     
     # Test function

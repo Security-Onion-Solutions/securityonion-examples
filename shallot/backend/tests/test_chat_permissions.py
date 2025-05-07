@@ -14,15 +14,16 @@ from tests.utils import await_mock
 
 
 @pytest.mark.asyncio
-async 
+async def test_chat_permissions_mock(db: AsyncSession):
+    """Test chat permissions with mocked DB."""
+    # This test was incomplete in the original file
+    pass
 
-def await_mock(return_value):
-    # Helper function to make mock return values awaitable in Python 3.13
-    async def _awaitable():
-        return return_value
-    return _awaitable()
 
-def test_get_chat_user_role(db: AsyncSession):
+# Using await_mock from tests.utils
+
+@pytest.mark.asyncio
+async def test_get_chat_user_role(db: AsyncSession):
     """Test getting a chat user's role."""
     # Create a test user
     test_user = ChatUser(

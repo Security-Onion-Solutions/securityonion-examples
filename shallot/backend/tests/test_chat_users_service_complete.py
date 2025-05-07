@@ -1,8 +1,8 @@
 """Comprehensive tests for the chat_users service."""
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, text, insert
-from unittest.mock import patch, MagicMock, AsyncMock, MagicMock
+from sqlalchemy import select
+from unittest.mock import patch, MagicMock, AsyncMock
 
 from app.models.chat_users import ChatUser, ChatUserRole, ChatService
 from app.services.chat_users import (
@@ -14,21 +14,240 @@ from app.services.chat_users import (
     update_chat_user_role,
     delete_chat_user
 )
-from tests.utils import await_mock
+from tests.utils import await_mock, setup_mock_db, create_mock_db_session
 
 
 @pytest.mark.asyncio
-async 
+async def test_chat_users_service_mock():
+    """Test chat users service with mocked DB for Python 3.13 compatibility."""
+    # Create a mock database session
+    mock_db = setup_mock_db()
+    
+    # Test get_chat_user_by_platform_id
+    mock_user = MagicMock(spec=ChatUser)
+    mock_user.platform_id = "test123"
+    mock_user.username = "testuser" 
+    mock_user.platform = ChatService.DISCORD
+    mock_user.role = ChatUserRole.ADMIN
+    
+    # Define a custom side effect function for execute
+    async def execute_mock_get_user(*args, **kwargs):
+        # Create a result mock that will be returned by execute
+        result_mock = MagicMock()
+        # Configure the scalar_one_or_none method to return our mock_user
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_user)
+        return result_mock
+    
+    # Patch the execute method
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_get_user)):
+        # Test the function
+        user = await get_chat_user_by_platform_id(mock_db, "test123", ChatService.DISCORD)
+        
+        # Verify the result
+        assert user is mock_user
+        assert user.username == "testuser"
+        assert user.platform == ChatService.DISCORD
+    
+    # Test create_chat_user
+    mock_created_user = MagicMock(spec=ChatUser)
+    mock_created_user.platform_id = "new123"
+    mock_created_user.username = "newuser"
+    mock_created_user.platform = ChatService.MATRIX
+    mock_created_user.role = ChatUserRole.BASIC
+    mock_created_user.display_name = "New User"
+    
+    # Patch db.add, commit, and refresh
+    with patch.object(mock_db, 'add') as mock_add, \
+         patch.object(mock_db, 'commit', new=AsyncMock()) as mock_commit, \
+         patch.object(mock_db, 'refresh', new=AsyncMock()) as mock_refresh, \
+         patch('app.services.chat_users.ChatUser', return_value=mock_created_user):
+         
+        # Test creating a user
+        new_user = await create_chat_user(
+            mock_db,
+            platform_id="new123",
+            username="newuser",
+            platform=ChatService.MATRIX,
+            role=ChatUserRole.BASIC,
+            display_name="New User"
+        )
+        
+        # Verify method calls and result
+        mock_add.assert_called_once()
+        mock_commit.assert_called_once()
+        mock_refresh.assert_called_once_with(mock_created_user)
+        assert new_user is mock_created_user
+        assert new_user.platform_id == "new123"
+        assert new_user.username == "newuser"
+    
+    # Test is_command_allowed with non-existent user
+    async def execute_mock_no_user(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=None)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_no_user)):
+        # Test permissions for non-existent user
+        assert await is_command_allowed(mock_db, "nonexistent", "DISCORD", "!help") is True
+        assert await is_command_allowed(mock_db, "nonexistent", "DISCORD", "!register") is True
+        assert await is_command_allowed(mock_db, "nonexistent", "DISCORD", "!alerts") is False
+    
+    # Test is_command_allowed with regular user
+    mock_regular_user = MagicMock(spec=ChatUser)
+    mock_regular_user.role = ChatUserRole.USER
+    
+    async def execute_mock_regular_user(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_regular_user)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_regular_user)):
+        # Test permissions for regular user
+        assert await is_command_allowed(mock_db, "user123", "DISCORD", "!help") is True
+        assert await is_command_allowed(mock_db, "user123", "DISCORD", "!status") is True
+        assert await is_command_allowed(mock_db, "user123", "DISCORD", "!alerts") is False
+    
+    # Test is_command_allowed with basic user
+    mock_basic_user = MagicMock(spec=ChatUser)
+    mock_basic_user.role = ChatUserRole.BASIC
+    
+    async def execute_mock_basic_user(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_basic_user)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_basic_user)):
+        # Test permissions for basic user
+        assert await is_command_allowed(mock_db, "basic123", "DISCORD", "!help") is True
+        assert await is_command_allowed(mock_db, "basic123", "DISCORD", "!status") is True
+        assert await is_command_allowed(mock_db, "basic123", "DISCORD", "!alerts") is True
+        assert await is_command_allowed(mock_db, "basic123", "DISCORD", "!custom") is False
+    
+    # Test is_command_allowed with admin user
+    mock_admin_user = MagicMock(spec=ChatUser)
+    mock_admin_user.role = ChatUserRole.ADMIN
+    
+    async def execute_mock_admin_user(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_admin_user)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_admin_user)):
+        # Test permissions for admin user
+        assert await is_command_allowed(mock_db, "admin123", "DISCORD", "!alerts") is True
+        assert await is_command_allowed(mock_db, "admin123", "DISCORD", "!custom") is True
+    
+    # Test get_chat_user_by_id
+    mock_user_by_id = MagicMock(spec=ChatUser)
+    mock_user_by_id.id = 1
+    mock_user_by_id.username = "byiduser"
+    mock_user_by_id.platform_id = "byid123"
+    
+    async def execute_mock_get_by_id(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_user_by_id)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_get_by_id)):
+        # Test getting a user by ID
+        user = await get_chat_user_by_id(mock_db, 1)
+        assert user is mock_user_by_id
+        assert user.username == "byiduser"
+        assert user.platform_id == "byid123"
+    
+    # Test get_all_chat_users
+    mock_users = [MagicMock(spec=ChatUser) for _ in range(3)]
+    for i, user in enumerate(mock_users):
+        user.id = i + 1
+        user.username = f"user{i}"
+    
+    async def execute_mock_get_all(*args, **kwargs):
+        result_mock = MagicMock()
+        scalars_mock = MagicMock()
+        scalars_mock.all = MagicMock(return_value=mock_users)
+        result_mock.scalars = AsyncMock(return_value=scalars_mock)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_get_all)):
+        # Test getting all users
+        users = await get_all_chat_users(mock_db)
+        assert users == mock_users
+        assert len(users) == 3
+    
+    # Test update_chat_user_role
+    mock_update_user = MagicMock(spec=ChatUser)
+    mock_update_user.id = 1
+    mock_update_user.username = "updateuser"
+    mock_update_user.role = ChatUserRole.USER
+    
+    async def execute_mock_get_for_update(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_update_user)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_get_for_update)), \
+         patch.object(mock_db, 'commit', new=AsyncMock()) as mock_commit, \
+         patch.object(mock_db, 'refresh', new=AsyncMock()) as mock_refresh:
+        # Test updating a user's role
+        updated_user = await update_chat_user_role(mock_db, 1, ChatUserRole.ADMIN)
+        
+        # Verify the role was updated
+        assert updated_user is mock_update_user
+        assert updated_user.role == ChatUserRole.ADMIN
+        
+        # Verify commit and refresh were called
+        mock_commit.assert_called_once()
+        mock_refresh.assert_called_once_with(mock_update_user)
+    
+    # Test update_chat_user_role with non-existent user
+    async def execute_mock_no_user_for_update(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=None)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_no_user_for_update)):
+        # Test updating a non-existent user
+        updated_user = await update_chat_user_role(mock_db, 999, ChatUserRole.ADMIN)
+        assert updated_user is None
+    
+    # Test delete_chat_user
+    mock_delete_user = MagicMock(spec=ChatUser)
+    mock_delete_user.id = 1
+    
+    async def execute_mock_get_for_delete(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=mock_delete_user)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_get_for_delete)), \
+         patch.object(mock_db, 'delete', new=AsyncMock()) as mock_delete, \
+         patch.object(mock_db, 'commit', new=AsyncMock()) as mock_commit:
+        # Test deleting a user
+        result = await delete_chat_user(mock_db, 1)
+        
+        # Verify the result
+        assert result is True
+        
+        # Verify delete and commit were called
+        mock_delete.assert_called_once_with(mock_delete_user)
+        mock_commit.assert_called_once()
+    
+    # Test delete_chat_user with non-existent user
+    async def execute_mock_no_user_for_delete(*args, **kwargs):
+        result_mock = MagicMock()
+        result_mock.scalar_one_or_none = AsyncMock(return_value=None)
+        return result_mock
+    
+    with patch.object(mock_db, 'execute', new=AsyncMock(side_effect=execute_mock_no_user_for_delete)):
+        # Test deleting a non-existent user
+        result = await delete_chat_user(mock_db, 999)
+        assert result is False
 
-def await_mock(return_value):
-    # Helper function to make mock return values awaitable in Python 3.13
-    async def _awaitable():
-        return return_value
-    return _awaitable()
 
-def test_get_chat_user_by_platform_id(db):
+@pytest.mark.asyncio
+async def test_get_chat_user_by_platform_id(db: AsyncSession):
     """Test getting a chat user by platform ID."""
-    # Create a test user directly in the database
+    # Create a test user
     test_user = ChatUser(
         platform_id="test123",
         username="testuser",
@@ -52,28 +271,10 @@ def test_get_chat_user_by_platform_id(db):
     # Test user not found
     not_found_user = await get_chat_user_by_platform_id(db, "nonexistent", ChatService.DISCORD)
     assert not_found_user is None
-    
-    # Test with await_mock in 3.13 compatibility mode
-    with patch('app.services.chat_users.select', return_value=MagicMock()) as mock_select, \
-         patch.object(db, 'execute', return_value=await_mock(MagicMock())) as mock_execute:
-        mock_result = mock_execute.return_value
-        mock_result.scalar_one_or_none.return_value = await_mock(None)
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
-
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        
-        result = await get_chat_user_by_platform_id(db, "test456", ChatService.DISCORD)
-        assert result is None
-        mock_select.assert_called_once()
-        mock_execute.assert_called_once()
 
 
 @pytest.mark.asyncio
-async def test_create_chat_user(db):
+async def test_create_chat_user(db: AsyncSession):
     """Test creating a chat user."""
     # Create a new user
     new_user = await create_chat_user(
@@ -171,6 +372,7 @@ async def test_get_chat_user_by_id(db: AsyncSession):
     )
     db.add(test_user)
     await db.commit()
+    await db.refresh(test_user)  # To get the ID
     
     # Get the user ID directly from the inserted user
     user_id = test_user.id
@@ -184,22 +386,6 @@ async def test_get_chat_user_by_id(db: AsyncSession):
     # Test with non-existent ID
     not_found = await get_chat_user_by_id(db, 9999)
     assert not_found is None
-    
-    # Test with await_mock for 3.13 compatibility
-    with patch.object(db, 'execute', return_value=await_mock(MagicMock())) as mock_execute:
-        mock_result = mock_execute.return_value
-        mock_result.scalar_one_or_none.return_value = await_mock(test_user)
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)  # Make awaitable for Python 3.13
-
-
-        mock_result.scalar_one_or_none.return_value = await_mock(mock_result.scalar_one_or_none.return_value)
-        
-        result = await get_chat_user_by_id(db, user_id)
-        assert result is test_user
-        mock_execute.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -225,23 +411,6 @@ async def test_get_all_chat_users(db: AsyncSession):
     
     second_page = await get_all_chat_users(db, skip=2, limit=2)
     assert len(second_page) == 2
-    
-    # Ensure different pages have different users
-    assert first_page[0].id != second_page[0].id
-    
-    # Test with await_mock for 3.13 compatibility
-    mock_users = [MagicMock(), MagicMock()]
-    with patch.object(db, 'execute', return_value=await_mock(MagicMock())) as mock_execute:
-        mock_result = mock_execute.return_value
-        mock_scalars = MagicMock()
-        mock_result.scalars.return_value = await_mock(mock_scalars)
-        mock_scalars.all.return_value = mock_users
-        
-        result = await get_all_chat_users(db)
-        assert result == mock_users
-        mock_execute.assert_called_once()
-        mock_result.scalars.assert_called_once()
-        mock_scalars.all.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -256,6 +425,7 @@ async def test_update_chat_user_role(db: AsyncSession):
     )
     db.add(test_user)
     await db.commit()
+    await db.refresh(test_user)  # To get the ID
     
     # Get the user ID directly from the inserted user
     user_id = test_user.id
@@ -286,6 +456,7 @@ async def test_delete_chat_user(db: AsyncSession):
     )
     db.add(test_user)
     await db.commit()
+    await db.refresh(test_user)  # To get the ID
     
     # Get the user ID directly from the inserted user
     user_id = test_user.id

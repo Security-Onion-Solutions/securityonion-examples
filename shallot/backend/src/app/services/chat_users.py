@@ -31,33 +31,6 @@ async def get_chat_user_by_platform_id(
         result = await result
         
     user = result.scalar_one_or_none()
-
-        
-    # In Python 3.13, scalar_one might return a coroutine
-
-        
-    if hasattr(user, "__await__"):
-
-        
-        user = await user
-
-        
-    # In Python 3.13, scalar_one might return a coroutine
-
-        
-    if hasattr(user, "__await__"):
-
-        
-        user = await user
-
-        
-    # In Python 3.13, scalar_one might return a coroutine
-
-        
-    if hasattr(user, "__await__"):
-
-        
-        user = await user
     # In Python 3.13, scalar_one_or_none might return a coroutine
     if hasattr(user, "__await__"):
         user = await user
