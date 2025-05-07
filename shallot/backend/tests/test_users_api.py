@@ -27,15 +27,12 @@ from .utils import await_mock, make_mock_awaitable
 client = TestClient(app)
 
 
-
-
 def await_mock(return_value):
     # Helper function to make mock return values awaitable in Python 3.13
     async def _awaitable():
         return return_value
     return _awaitable()
 
-@pytest.fixture
 @pytest.fixture
 def mock_db():
     """Create a mock database session."""

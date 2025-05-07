@@ -70,11 +70,11 @@ The script was enhanced to handle decorator issues:
 
 ### Files with Duplicate Decorator Fixes
 - `tests/test_auth_api.py` - Removed duplicate decorators on `mock_user` and `mock_superuser` fixtures
-- `tests/test_users_api.py` - Removed duplicate decorators on `mock_user` and `mock_superuser` fixtures
-- `tests/test_settings_api.py` - Removed duplicate decorator on `mock_setting` fixture
+- `tests/test_users_api.py` - Removed duplicate decorators on `mock_user`, `mock_superuser`, and `mock_db` fixtures
+- `tests/test_settings_api.py` - Removed duplicate decorators on `mock_setting` and `mock_db` fixtures
 - `tests/test_securityonion.py` - Removed duplicate decorators on `mock_so_settings` and `mock_httpx_client` fixtures
 - `tests/test_alerts_command.py` - Removed duplicate decorator on `mock_so_client` fixture
-- `tests/test_commands_core.py` - Removed duplicate decorators on `mock_user`, `mock_chat_user` and `mock_command` fixtures
+- `tests/test_commands_core.py` - Removed duplicate decorators on `mock_user`, `mock_chat_user`, `mock_command`, and `mock_db` fixtures, and fixed formatting of `await_mock` fixture
 
 Some files define fixtures but don't actually use them in any test functions, but we still fixed the decorators to ensure proper pytest functionality.
 

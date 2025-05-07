@@ -29,20 +29,18 @@ client = TestClient(app)
 
 
 @pytest.fixture
-
 def await_mock(return_value):
     """Helper function to make mock return values awaitable in Python 3.13."""
     async def _awaitable():
         return return_value
     return _awaitable()
-@pytest.fixture
 
+@pytest.fixture
 def mock_db():
     """Create a mock database session."""
     return AsyncMock()
 
 
-@pytest.fixture
 @pytest.fixture
 def mock_user():
     """Create a mock user."""
