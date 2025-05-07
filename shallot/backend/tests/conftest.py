@@ -70,14 +70,15 @@ async def setup_database():
 async def db():
     """Get a test database session."""
     async with TestingSessionLocal() as session:
-        try:
-            yield session
-            await session.commit()
-        except Exception:
-            await session.rollback()
-            raise
-        finally:
-            await session.close()
+        # Start a transaction
+        async with session.begin():
+            # Use nested transaction for tests
+            try:
+                yield session
+                # The transaction will be committed when the session.begin() context exits
+            except Exception:
+                # Rollback happens automatically on exception in the session.begin() context
+                raise
 
 @pytest.fixture
 def override_get_db():

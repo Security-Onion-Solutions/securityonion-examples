@@ -1,7 +1,6 @@
 """Tests for chat users service."""
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import text
 from unittest.mock import patch, MagicMock
 from app.models.chat_users import ChatUser, ChatUserRole, ChatService
 from app.services.chat_users import (
@@ -27,7 +26,8 @@ async def test_get_chat_user_by_platform_id(db: AsyncSession):
         role=ChatUserRole.ADMIN
     )
     db.add(test_user)
-    await db.commit()
+    # The commit will happen automatically through the session.begin() context
+    # in the fixture, so we don't need to explicitly commit here
     
     # Test getting the user
     found_user = await get_chat_user_by_platform_id(db, "test123", ChatService.DISCORD)
@@ -48,37 +48,39 @@ async def test_get_chat_user_by_platform_id(db: AsyncSession):
 @pytest.mark.asyncio
 async def test_create_chat_user(db: AsyncSession):
     """Test creating a chat user."""
-    # Create a new user
-    new_user = await create_chat_user(
-        db,
-        platform_id="new123",
-        username="newuser",
-        platform=ChatService.MATRIX,
-        role=ChatUserRole.BASIC,
-        display_name="New User"
-    )
-    
-    # Verify user was created
-    assert new_user.platform_id == "new123"
-    assert new_user.username == "newuser"
-    assert new_user.platform == ChatService.MATRIX
-    assert new_user.role == ChatUserRole.BASIC
-    assert new_user.display_name == "New User"
-    
-    # Verify user can be retrieved from DB
-    stored_user = await get_chat_user_by_platform_id(db, "new123", ChatService.MATRIX)
-    assert stored_user is not None
-    assert stored_user.username == "newuser"
-    
-    # Test creating with defaults
-    default_user = await create_chat_user(
-        db,
-        platform_id="default123",
-        username="defaultuser",
-        platform=ChatService.SLACK
-    )
-    assert default_user.role == ChatUserRole.USER
-    assert default_user.display_name is None
+    # Mock the create_chat_user function to avoid external commits
+    with patch('app.services.chat_users.db.commit') as mock_commit:
+        # Create a new user
+        new_user = await create_chat_user(
+            db,
+            platform_id="new123",
+            username="newuser",
+            platform=ChatService.MATRIX,
+            role=ChatUserRole.BASIC,
+            display_name="New User"
+        )
+        
+        # Verify user was created
+        assert new_user.platform_id == "new123"
+        assert new_user.username == "newuser"
+        assert new_user.platform == ChatService.MATRIX
+        assert new_user.role == ChatUserRole.BASIC
+        assert new_user.display_name == "New User"
+        
+        # Verify user can be retrieved from DB
+        stored_user = await get_chat_user_by_platform_id(db, "new123", ChatService.MATRIX)
+        assert stored_user is not None
+        assert stored_user.username == "newuser"
+        
+        # Test creating with defaults
+        default_user = await create_chat_user(
+            db,
+            platform_id="default123",
+            username="defaultuser",
+            platform=ChatService.SLACK
+        )
+        assert default_user.role == ChatUserRole.USER
+        assert default_user.display_name is None
 
 
 @pytest.mark.asyncio
@@ -127,13 +129,11 @@ async def test_get_chat_user_by_id(db: AsyncSession):
         role=ChatUserRole.ADMIN
     )
     db.add(test_user)
-    await db.commit()
+    # Flush to generate ID without committing
+    await db.flush()
     
-    # Get the user's ID
-    result = await db.execute(
-        text("SELECT id FROM chat_users WHERE platform_id = 'byid123'")
-    )
-    user_id = result.scalar_one()
+    # Get the user ID directly from the test_user object
+    user_id = test_user.id
     
     # Test getting by ID
     found_user = await get_chat_user_by_id(db, user_id)
@@ -157,7 +157,8 @@ async def test_get_all_chat_users(db: AsyncSession):
             platform=ChatService.DISCORD,
             role=ChatUserRole.USER
         ))
-    await db.commit()
+    # Flush to ensure the objects are in the session without committing
+    await db.flush()
     
     # Get all users
     all_users = await get_all_chat_users(db)
@@ -185,26 +186,25 @@ async def test_update_chat_user_role(db: AsyncSession):
         role=ChatUserRole.USER
     )
     db.add(test_user)
-    await db.commit()
+    await db.flush()
     
-    # Get the user's ID
-    result = await db.execute(
-        text("SELECT id FROM chat_users WHERE platform_id = 'update123'")
-    )
-    user_id = result.scalar_one()
+    # Get the user's ID directly from the object
+    user_id = test_user.id
     
-    # Update the role
-    updated_user = await update_chat_user_role(db, user_id, ChatUserRole.ADMIN)
-    assert updated_user is not None
-    assert updated_user.role == ChatUserRole.ADMIN
-    
-    # Verify role is updated in the database
-    refreshed_user = await get_chat_user_by_id(db, user_id)
-    assert refreshed_user.role == ChatUserRole.ADMIN
-    
-    # Test updating non-existent user
-    nonexistent_update = await update_chat_user_role(db, 9999, ChatUserRole.ADMIN)
-    assert nonexistent_update is None
+    # Mock the update function to avoid external commits
+    with patch('app.services.chat_users.db.commit') as mock_commit:
+        # Update the role
+        updated_user = await update_chat_user_role(db, user_id, ChatUserRole.ADMIN)
+        assert updated_user is not None
+        assert updated_user.role == ChatUserRole.ADMIN
+        
+        # Verify role is updated in the database
+        refreshed_user = await get_chat_user_by_id(db, user_id)
+        assert refreshed_user.role == ChatUserRole.ADMIN
+        
+        # Test updating non-existent user
+        nonexistent_update = await update_chat_user_role(db, 9999, ChatUserRole.ADMIN)
+        assert nonexistent_update is None
 
 
 @pytest.mark.asyncio
@@ -218,22 +218,21 @@ async def test_delete_chat_user(db: AsyncSession):
         role=ChatUserRole.USER
     )
     db.add(test_user)
-    await db.commit()
+    await db.flush()
     
-    # Get the user's ID
-    result = await db.execute(
-        text("SELECT id FROM chat_users WHERE platform_id = 'delete123'")
-    )
-    user_id = result.scalar_one()
+    # Get the user's ID directly from the object
+    user_id = test_user.id
     
-    # Delete the user
-    delete_result = await delete_chat_user(db, user_id)
-    assert delete_result is True
-    
-    # Verify user is deleted
-    deleted_user = await get_chat_user_by_id(db, user_id)
-    assert deleted_user is None
-    
-    # Test deleting non-existent user
-    nonexistent_delete = await delete_chat_user(db, 9999)
-    assert nonexistent_delete is False
+    # Mock the delete function to avoid external commits
+    with patch('app.services.chat_users.db.commit') as mock_commit:
+        # Delete the user
+        delete_result = await delete_chat_user(db, user_id)
+        assert delete_result is True
+        
+        # Verify user is deleted
+        deleted_user = await get_chat_user_by_id(db, user_id)
+        assert deleted_user is None
+        
+        # Test deleting non-existent user
+        nonexistent_delete = await delete_chat_user(db, 9999)
+        assert nonexistent_delete is False

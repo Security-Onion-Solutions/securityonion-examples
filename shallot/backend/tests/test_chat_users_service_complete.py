@@ -255,7 +255,8 @@ async def test_get_chat_user_by_platform_id(db: AsyncSession):
         role=ChatUserRole.ADMIN
     )
     db.add(test_user)
-    await db.commit()
+    # The commit will happen automatically through the fixture
+    await db.flush()
     
     # Test getting the user
     found_user = await get_chat_user_by_platform_id(db, "test123", ChatService.DISCORD)
@@ -361,18 +362,17 @@ async def test_is_command_allowed_admin_role(db: AsyncSession):
 
 
 @pytest.mark.asyncio
-async def test_get_chat_user_by_id(db: AsyncSession):
+async def test_get_chat_user_by_id_complete(db: AsyncSession):
     """Test getting a chat user by ID."""
     # Create a test user
     test_user = ChatUser(
-        platform_id="byid123",
-        username="byiduser",
+        platform_id="byid123_complete",
+        username="byiduser_complete",
         platform=ChatService.DISCORD,
         role=ChatUserRole.ADMIN
     )
     db.add(test_user)
-    await db.commit()
-    await db.refresh(test_user)  # To get the ID
+    await db.flush()  # Flush to generate ID without committing
     
     # Get the user ID directly from the inserted user
     user_id = test_user.id
@@ -380,8 +380,8 @@ async def test_get_chat_user_by_id(db: AsyncSession):
     # Test getting by ID
     found_user = await get_chat_user_by_id(db, user_id)
     assert found_user is not None
-    assert found_user.username == "byiduser"
-    assert found_user.platform_id == "byid123"
+    assert found_user.username == "byiduser_complete"
+    assert found_user.platform_id == "byid123_complete"
     
     # Test with non-existent ID
     not_found = await get_chat_user_by_id(db, 9999)

@@ -12,6 +12,7 @@ def await_mock(return_value):
         return return_value
     return _awaitable()
 
+@pytest.fixture
 def chat_manager():
     """Create a chat manager for testing."""
     with patch('app.core.chat_manager.get_chat_service') as mock_get_service:
